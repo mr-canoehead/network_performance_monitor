@@ -13,7 +13,7 @@ The Network Performance Monitor generates a daily PDF report showing graphs of t
 
 The following diagram illustrated how the system is connected to the network being monitored.
 
-Note that the Network Performance Monitor is not a router, WiFi access point, or wireless bridge. The wireless network interfaces serve only as targets for iperf3 tests.
+Note: the Network Performance Monitor is not a router, WiFi access point, or wireless bridge. The wireless network interfaces serve only as targets for iperf3 performance tests.
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/10369989/78664037-bb532b80-78c2-11ea-8b8b-a71b8eff029f.png" width="80%">
