@@ -6,7 +6,8 @@
 NET_INFO_PATH="/sys/class/net/"
 pingtest_retcode_file="/tmp/pingtest.retcode"
 TITLE="Network Performance Monitor Configuration"
-OUTPUT_FILE="/opt/netperf/config/interfaces.json"
+APPLICATION_PATH="/opt/netperf"
+OUTPUT_FILE="$APPLICATION_PATH/config/interfaces.json"
 
 ###### Supporting Functions
 
@@ -272,7 +273,7 @@ do
 			whiptail --title "$TITLE" --msgbox "The script will now connect the wireless interfaces to their respective wireless networks. You will be prompted to select a wireless network and to enter the corresponding passphrase for each network." 12 60 3>&1 1>&2 2>&3
 			show_wifi_config_msg=false
 		fi
-		./setup_wifi.sh "$s"
+		$APPLICATION_PATH/setup_wifi.sh "$s"
 	fi
 done
 
