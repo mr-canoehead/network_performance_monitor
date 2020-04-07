@@ -5,13 +5,13 @@ The system tests aspects of network performance including:
 - Internet speed
 - Internet connectivity (ping)
 - Domain Name lookups
-- Local network speeds
+- Local network speeds (particularly useful for testing 2.4GHz and 5GHz wireless networks)
 
 The system includes a Bandwidth Monitor feature which measures Internet bandwidth usage throughout the day.
 
-The Network Performance Monitor generates a daily PDF report showing graphs of the various test results, including indicators for possible Internet outages. The bandwidth monitor measurements are also plotted on a graph to show Internet usage patterns.
+The Network Performance Monitor generates a daily PDF report containing graphs of the various test results, including indicators for Internet outages. The Bandwidth Monitor measurements are also plotted on a graph to show Internet usage patterns.
 
-The following diagram illustrated how the system is connected to the network being monitored.
+The following diagram illustrates how the system is connected to the network being monitored.
 
 Note: the Network Performance Monitor is not a router, WiFi access point, or wireless bridge. The wireless network interfaces serve only as targets for iperf3 performance tests.
 
