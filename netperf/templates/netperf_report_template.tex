@@ -1,0 +1,78 @@
+\documentclass[11pt]{article}
+\usepackage{titlesec}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+
+%\usepackage{pgffor}
+
+\title{\vspace{-0.5in}\huge{Network Performance Analysis\\\large Daily test report for client id <CLIENT_ID>}\vspace{-0.5in}
+}
+\begin{document}
+\setlength{\parindent}{0pt}
+\date{<QUERY_DATE>}
+\maketitle
+\section{Internet Service Performance}
+The main factors that affect your Internet service performance are download / upload speeds, latency, and domain name resolution. The network performance monitor runs various tests periodically thoughout the day to measure these factors, the results of those tests are summarized in the following sections.
+\subsection{Download / Upload Speeds, Latency, and Internet Outages}
+This chart plots Internet speedtest results, including the download and upload speeds in megabits per second (Mbps), and the latency (ping) in milliseconds. Keep in mind that these tests are run in parallel with any other Internet communication that may be occurring on your network. Network activity such as large downloads or media streaming sessions will affect these test results. 
+\begin{center}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{<SPEEDTEST_CHART_NAME>}
+\end{center}
+\subsection{Data summary}
+%\medskip
+\begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}} 
+Average download speed: & <RX_MBPS_AVG> & Mbps \\
+Average upload speed: & <TX_MBPS_AVG> & Mbps \\
+Average latency: & <LATENCY_AVG> & ms \\
+Internet outages: & <ISP_OUTAGES> & \\
+\end{tabular}
+
+\medskip
+
+<OUTAGE_INFO>
+%\pagebreak
+<BANDWIDTH_REPORT>
+
+\subsection{Domain name resolution}
+This chart plots the results of domain name resolution tests. The tests including internal DNS queries which use your network's default DNS server (normally this is your ISP's DNS server) and external DNS queries that use public DNS servers such as Google and Cloudflare. Slow DNS queries can make your Internet connection seem slow. Persistent DNS query failures can make your Internet service unreliable.
+\begin{center}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{<DNS_CHART_NAME>}
+\end{center}
+
+\pagebreak
+\section{Local Network Performance}
+The network performance monitor runs periodic tests of local networks using the \textbf{iperf3} program. The following charts plot the test results for each network interface (excluding the testing interface).
+
+<INTERFACE_REPORTS>
+
+\pagebreak
+\section{Internet speedtest data}
+The following table contains the results of all Internet speed tests performed during the reporting day.
+\begin{center}
+\begin{longtable}{|l|l|l|l|l|}
+\caption[Speedtest Data]{Speedtest Data} \label{grid_mlmmh} \\
+
+\hline \multicolumn{1}{|c|}{\textbf{Time}} & \multicolumn{1}{c|}{\textbf{Download Mbps}} & \multicolumn{1}{c|}{\textbf{Upload Mbps}} & \multicolumn{1}{c|}{\textbf{Ping}} & \multicolumn{1}{c|}{\textbf{Remote Host}} \\ \hline 
+\endfirsthead
+
+\multicolumn{5}{c}%
+{{\bfseries \tablename\ \thetable{} -- continued from previous page}} \\
+\hline \multicolumn{1}{|c|}{\textbf{Time}} &
+\multicolumn{1}{c|}{\textbf{Download Mbps}} &
+\multicolumn{1}{c|}{\textbf{Upload Mbps}} & 
+\multicolumn{1}{c|}{\textbf{Ping}} & 
+\multicolumn{1}{c|}{\textbf{Remote Host}} \\ \hline 
+\endhead
+
+\hline \multicolumn{5}{|r|}{{Continued on next page}} \\ \hline
+\endfoot
+\hline \hline
+\endlastfoot
+<SPEEDTEST_TABLE_DATA>
+\end{longtable}
+\medskip
+\huge End of report.
+\end{center}
+\end{document}
