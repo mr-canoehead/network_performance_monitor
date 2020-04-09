@@ -17,6 +17,7 @@ packages+=( "texlive-latex-extra" )
 packages+=( "texlive-fonts-recommended" )
 packages+=( "rubber" )
 packages+=( "git" )
+packages+=( "bc" )
 
 all_packages_installed=true
 echo "Installing required packages..."
