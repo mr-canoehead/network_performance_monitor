@@ -50,6 +50,13 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
+# check if the interfaces have already been configured
+ns_count=$( ip netns list | wc -l )
+if [[ "$ns_count" -ne "0" ]]; then
+        whiptail --title "$TITLE" --msgbox "The network interfaces have already been configured on this system.\nTo reconfigure the interfaces, please refer to the page:\n\"Reconfiguring the network interfaces\" in the project Wiki" 10 76 3>&1 1>&2 2>&3
+        exit 1
+fi
+
 result=$(whiptail --title "$TITLE" --yesno "This script will generate a configuration file for the Network Performance Monitor network interfaces. If a configuration file already exists, it will be overwritten.\nBefore continuing, you should have performed the network interface identification and physical labeling procedure described in the wiki.\nDo you wish to proceed?" 13 80 3>&1 1>&2 2>&3)
 if [ $? == 1 ]; then
 	exit 0
