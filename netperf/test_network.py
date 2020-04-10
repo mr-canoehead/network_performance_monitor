@@ -136,10 +136,12 @@ def test_isp(test_exec_namespace,dbq):
 		speedtest_json=json.loads(json_str)
 		rx_Mbps=round(float(speedtest_json['download'])/1e6,2)
 		tx_Mbps=round(float(speedtest_json['upload'])/1e6,2)
+		rx_bytes=speedtest_json['bytes_received']
+		tx_bytes=speedtest_json['bytes_sent']
 		ping = round(speedtest_json['ping'],2)
 		remote_host=speedtest_json['server']['host']
 		url=speedtest_json['server']['url']
-		speedtest_results=(client_id,time.time(),rx_Mbps,tx_Mbps,remote_host,url,ping)
+		speedtest_results=(client_id,time.time(),rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
 		test_status = True
 	else:
 		test_log.info("Speedtest failed.")
@@ -147,6 +149,10 @@ def test_isp(test_exec_namespace,dbq):
 		speedtest_results=(client_id,time.time(),0,0,"n/a","n/a",0)
 		rx_Mbps = 0
 		tx_Mbps = 0
+		rx_bytes = 0
+		tx_bytes = 0
+		rx_bytes = 0
+		tx_bytes = 0
 		ping = 0
 		remote_host = "n/a"
 		url = "n/a"
@@ -156,6 +162,8 @@ def test_isp(test_exec_namespace,dbq):
 				"timestamp" : time.time(), \
 				"rx_Mbps" : rx_Mbps, \
 				"tx_Mbps" : tx_Mbps, \
+				"rx_bytes" : rx_bytes, \
+				"tx_bytes" : tx_bytes, \
 				"remote_host" : remote_host, \
 				"url" : url, \
 				"ping" : ping}

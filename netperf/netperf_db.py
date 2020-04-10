@@ -68,6 +68,8 @@ class netperf_db:
                                         epoch_time real NOT NULL,
                                         rx_Mbps real NOT NULL,
                                         tx_Mbps real NOT NULL,
+					rx_bytes integer NOT NULL,
+					tx_bytes integer NOT NULL,
                                         remote_host text NOT NULL,
                                         url text NOT NULL,
                                         ping real,
@@ -197,11 +199,13 @@ class netperf_db:
                             data["timestamp"], \
                             data["rx_Mbps"], \
                             data["tx_Mbps"], \
+                            data["rx_bytes"],\
+                            data["tx_bytes"],\
                             data["remote_host"], \
                             data["url"], \
                             data["ping"] )
-                sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,remote_host,url,ping)
-                        VALUES(?,?,?,?,?,?,?);'''
+                sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
+                        VALUES(?,?,?,?,?,?,?,?,?);'''
                 cur = self.db_conn.cursor()
                 cur.execute(sql, row_data)
                 self.db_conn.commit()
@@ -281,14 +285,18 @@ class netperf_db:
 		col_time=1
 		col_rx_Mbps=2
 		col_tx_Mbps=3
-		col_remote_host=4
-		col_url=5
-		col_ping=6
+                col_rx_bytes=4
+                col_tx_bytes=5
+		col_remote_host=6
+		col_url=7
+		col_ping=8
 		results=[]
 		for i in cur.fetchall():
 			results.append({"timestamp" : i[col_time], \
 					"rx_Mbps" : i[col_rx_Mbps], \
 				        "tx_Mbps" : i[col_tx_Mbps], \
+                                        "rx_bytes" : i[col_rx_bytes], \
+                                        "tx_bytes" : i[col_tx_bytes], \
 					"ping" : i[col_ping], \
 					"remote_host" : i[col_remote_host],\
 					"url" : i[col_url]})

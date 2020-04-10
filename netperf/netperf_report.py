@@ -129,10 +129,14 @@ def main():
 	speedtest_data["times"]["raw"] = []
 	speedtest_data["outages"] = {}
 	speedtest_data["outages"]["times"] = []
+	rx_bytes = long(0)
+	tx_bytes = long(0)
 
 	for r in rows:
 		speedtest_data["rx_Mbps"]["raw"].append(r["rx_Mbps"])
 		speedtest_data["tx_Mbps"]["raw"].append(r["tx_Mbps"])
+		rx_bytes += long(r["rx_bytes"])
+		tx_bytes += long(r["tx_bytes"])
 		speedtest_data["ping"]["raw"].append(r["ping"])
 		speedtest_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
 		if (r["rx_Mbps"] == 0) or (r["tx_Mbps"] == 0):
@@ -488,6 +492,9 @@ def main():
 	main_replacement_values["<RX_MBPS_AVG>"] = str(round(speedtest_data["averages"]["rx_Mbps"],2))
 	main_replacement_values["<TX_MBPS_AVG>"] = str(round(speedtest_data["averages"]["tx_Mbps"],2))
 	main_replacement_values["<LATENCY_AVG>"] = str(round(speedtest_data["averages"]["ping"],2))
+	main_replacement_values["<RX_MB>"] = str(round(float(rx_bytes)/float(1e6),2))
+	main_replacement_values["<TX_MB>"] = str(round(float(tx_bytes)/float(1e6),2))
+	main_replacement_values["<RXTX_MB>"] = str(round(float(rx_bytes + tx_bytes)/float(1e6),2))
 
 	interface_reports_macro = ""
 	for i in iperf3_interfaces:
