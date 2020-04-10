@@ -49,7 +49,8 @@ sleep 5
 network_id=$(wpa_cli -i "$INTERFACE" add_network)
 
 associated=false
-until [[ "$associated" == true ]]
+skip_interface=false
+until [[ "$associated" == true ]] || [[ "$skip_interface" == true ]]
 do
 	# scan for wireless networks
 	result=$(wpa_cli -i "$INTERFACE" scan > /dev/null)
@@ -119,7 +120,12 @@ do
 		whiptail --title "$TITLE" --msgbox "Successfully connected wireless interface $INTERFACE to the network $ssid.\nNetwork information will be saved in the file: $WPA_SUPPLICANT_FILE" 10 60 3>&1 1>&2 2>&3
 		associated=true
 	else
-		whiptail --title "$TITLE" --msgbox "Unable to connect interface $INTERFACE to the wireless network $ssid. Please choose a different wireless network or double-check your password." 15 40 3>&1 1>&2 2>&3
+		#whiptail --title "$TITLE" --msgbox "Unable to connect interface $INTERFACE to the wireless network $ssid. Please choose a different wireless network or double-check your password." 15 40 3>&1 1>&2 2>&3
+                whiptail --title "$TITLE" --yesno "Unable to connect interface $INTERFACE to the wireless network $ssid.\n\nPlease choose a different wireless network or double-check your password.\n\nDo you want to retry configuring the wireless network for this interface?" 13 80 3>&1 1>&2 2>&3
+                if [[ "$?" -eq 1 ]]; then
+                        whiptail --title "$TITLE" --msgbox "You will need to create a wpa_supplicant file for the interface $INTERFACE manually. Please refer to the sample configuration files in the Wiki for example wpa_supplicant files." 12 80 3>&1 1>&2 2>&3
+                        skip_interface=true
+                fi
 		associated=false
 	fi
 done

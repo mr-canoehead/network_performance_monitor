@@ -185,16 +185,7 @@ class netperf_db:
 		cur.close()
 		return cur.lastrowid
 
-#	def log_speedtest(self, speedtest_results):
-#		sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,remote_host,url,ping)
-#			VALUES(?,?,?,?,?,?,?);'''
-#		cur = self.db_conn.cursor()
-#		cur.execute(sql, speedtest_results)
-#		self.db_conn.commit()
-#		cur.close()
-#		return cur.lastrowid
-
-	def log_st(self,data):
+	def log_speedtest(self,data):
                 row_data = ( data["client_id"], \
                             data["timestamp"], \
                             data["rx_Mbps"], \
@@ -212,7 +203,7 @@ class netperf_db:
                 cur.close()
                 return cur.lastrowid
 
-	def log_bw(self,data):
+	def log_bandwidth(self,data):
 		row_data = ( data["client_id"], \
 			     data["timestamp"], \
 		             data["rx_bytes"], \
@@ -510,8 +501,8 @@ if __name__ == '__main__':
 
 	def function_map(type):
 		switcher = {
-			"bandwidth": db.log_bw,
-			"speedtest": db.log_st,
+			"bandwidth": db.log_bandwidth,
+			"speedtest": db.log_speedtest,
 			"ping": db.log_ping,
 			"iperf3": db.log_iperf3,
 			"dns": db.log_dns,
@@ -525,8 +516,8 @@ if __name__ == '__main__':
 		if message is not None:
 			type = message.get("type",None)
 			data = message.get("data",None)
-				#netperf_db_log.error("received invalid message: {}".format(str(message)))
-				#continue
+			#netperf_db_log.error("received invalid message: {}".format(str(message)))
+			#continue
 			netperf_db_log.debug("received message type: {} data: {}".format(type,json.dumps(data)))
 
 		else:
@@ -534,6 +525,8 @@ if __name__ == '__main__':
 			data = {"error" : "unable to parse json object"}
 			netperf_db_log.error("received undefined message")
 			continue
-		function_map(type)(data)
-
+		try:
+			function_map(type)(data)
+		except:
+			netperf_db_log.error("error occurred while writing to the database")
 	db.close()
