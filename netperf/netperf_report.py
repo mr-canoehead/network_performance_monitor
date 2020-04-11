@@ -69,13 +69,17 @@ def main():
 	midnight = datetime.combine(today,datetime.max.time())
 	yesterday = today - timedelta(days=1)
 	if len(sys.argv) > 1:
-		try:
-			query_date = datetime.strptime(sys.argv[1], '%Y-%m-%d')
-		except:
-			query_date = yesterday
-		if query_date > midnight:
-			netperf_report_log.error("Invalid report date; cannot generate a report for future dates.")
-			return
+		arg1 = sys.argv[1]
+		if arg1 == "today":
+			query_date = today
+		else:
+			try:
+				query_date = datetime.strptime(sys.argv[1], '%Y-%m-%d')
+			except:
+				query_date = yesterday
+			if query_date > midnight:
+				netperf_report_log.error("Invalid report date; cannot generate a report for future dates.")
+				return
 	else:
 		query_date = yesterday
 
