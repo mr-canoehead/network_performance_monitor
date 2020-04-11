@@ -1,5 +1,5 @@
 <H1>Network Performance Monitor</H1>
-The Network Performance Monitor is a portable tool for diagnosing issues with home networks. It can be deployed without making configuration changes to the network being monitored.
+The Network Performance Monitor is a portable tool for diagnosing performance issues on home networks. It can be deployed without making configuration changes to the network being monitored.
 The system tests several aspects of network performance including:
 
 - Internet speed
