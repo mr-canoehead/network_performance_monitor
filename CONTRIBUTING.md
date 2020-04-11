@@ -10,6 +10,14 @@ I welcome contributions to the project, that's how open source projects like thi
 
 When developing a new feature or bug fix for this project, please create a new branch; make your changes in that branch and submit a pull request for that branch. Please do not submit pull requests that contain changes to the master branch.
 
-Thanks,
+## Collaborators
+This project needs collaborators! If you are interested in joining the project as a collaborator and your skill set covers some of the following topics, please sent an email to the repository owner:
+- Python
+- General GNU/Linux knowledge
+- Bash scripting
+- Networking
+- LaTeX document preparation
+
+Thank you.
 
 Chris (mr-canoehead)
