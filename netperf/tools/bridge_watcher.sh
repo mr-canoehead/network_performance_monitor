@@ -20,6 +20,6 @@ while true; do
 	read -t 0.25 -N 1 input
 	if [[ $input = "q" ]] || [[ $input = "Q" ]]; then
 		echo
-        break
-    fi
+		break
+	fi
 done
