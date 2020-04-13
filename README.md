@@ -13,6 +13,8 @@ The Network Performance Monitor generates a daily PDF report containing graphs o
 
 [Click here for a sample of the daily report produced by the system.](https://mr-canoehead.github.io/f216f253_20200326_netperf.pdf)
 
+If you'd like to build a Network Performance Monitor, follow the [setup and installation instructions in the Wiki](https://github.com/mr-canoehead/network_performance_monitor/wiki)
+
 The following diagram illustrates how the system is connected to the network being monitored.
 
 Note: the Network Performance Monitor is not a router, WiFi access point, or wireless bridge. The wireless network interfaces serve only as targets for iperf3 performance tests.
@@ -20,5 +22,3 @@ Note: the Network Performance Monitor is not a router, WiFi access point, or wir
 <p align="center">
 <img src="https://user-images.githubusercontent.com/10369989/78664037-bb532b80-78c2-11ea-8b8b-a71b8eff029f.png" width="80%">
 </p>
-
-If you'd like to build a Network Performance Monitor, follow the [setup and installation instructions in the Wiki](https://github.com/mr-canoehead/network_performance_monitor/wiki)
