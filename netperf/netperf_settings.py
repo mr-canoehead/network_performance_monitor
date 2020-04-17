@@ -128,8 +128,15 @@ class netperf_settings:
 		self.settings_json["data_root"] = path.rstrip("/")
 		self.save_settings()
 
+	def set_log_level(self,log_level):
+		if "logging" in self.settings_json:
+			log_settings = self.settings_json["logging"]
+			if "log_level" in log_settings:
+				log_settings["log_level"] = log_level
+		self.save_settings()
 
 def main():
+	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
 	ns = netperf_settings()
 	unixOptions = 'g:s:v'
 	gnuOptions = ['get=', 'set=', 'value=']
@@ -200,5 +207,11 @@ def main():
 						ns.set_data_root(value)
 					else:
 						print("Invalid path.")
+				else:
+					if setting == "log_level":
+						if value in log_levels:
+							ns.set_log_level(value)
+						else:
+							print("Invalid log level")
 if __name__ == "__main__":
 	main()
