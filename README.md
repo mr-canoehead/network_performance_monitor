@@ -22,3 +22,9 @@ Note: the Network Performance Monitor is not a router, WiFi access point, or wir
 <p align="center">
 <img src="https://user-images.githubusercontent.com/10369989/78664037-bb532b80-78c2-11ea-8b8b-a71b8eff029f.png" width="80%">
 </p>
+
+## Credits
+[Bryan Montford](https://github.com/GrfxGawd)
+  - suggested the Data Usage Quota feature to limit Internet data usage for users with metered Internet service.
+
+
