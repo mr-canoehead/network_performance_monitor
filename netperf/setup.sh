@@ -4,11 +4,18 @@
 
 # This is the initial setup script for configuring the Network Performance Monitor.
 # It is used to set the data storage path and data usage quota (if applicable)
-# It then calls the script setup_interfaces.sh, which is used to configure the
-# network interfaces used by the system.
+# It then calls the script setup_interfaces.sh which configures the network 
+# interfaces used by the system.
 
 TITLE="Network Performance Monitor Configuration"
 CONFIG_APP="/opt/netperf/netperf_settings.py"
+
+# check that the script is being run as root
+if [[ $EUID -ne 0 ]]; then
+        echo "This script must be run as root, e.g:"
+        echo "sudo ./$(basename $0)"
+        exit 1
+fi
 
 valid_dir=false
 write_access=false
@@ -89,6 +96,13 @@ else
 	whiptail --title "$TITLE" --msgbox "The system will be run without a data usage quota. Be aware that this may result in high data usage if the system is allowed to run continuously for an extended period of time. The Internet speed test usage metrics are shown on the daily report." 10 80 3>&1 1>&2 2>&3
 	data_usage_quota_GB=0
 	enforce_quota="False"
+fi
+
+# create the log directory if it doesn't exist:
+if [[ ! -d "$data_root/log" ]]; then
+	sudo -u pi mkdir "$data_root/log"
+	# create the initial log file as the 'pi' user
+	sudo -u pi touch "$data_root/log/netperf.log"
 fi
 
 # save the settings to the configuration file:
