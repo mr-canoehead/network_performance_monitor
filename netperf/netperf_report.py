@@ -17,17 +17,18 @@ import numpy as np
 import re
 import util
 from netperf_db import netperf_db
+from netperf_settings import netperf_settings
 import pprint
 import logging
 from time_bins import time_bins
 
+NETPERF_SETTINGS = netperf_settings()
 CLIENT_ID = util.get_client_id()
-DATA_ROOT="/mnt/usb_storage/netperf/{}".format(CLIENT_ID)
-NETPERF_DB="{}/database/{}.db".format(DATA_ROOT,CLIENT_ID)
+DATA_ROOT="{}/{}".format(NETPERF_SETTINGS.get_data_root(),CLIENT_ID)
+NETPERF_DB=NETPERF_SETTINGS.get_db_filename()
 REPORT_TEMPLATE_PATH="/opt/netperf/templates"
 REPORTS_PATH="{}/reports".format(DATA_ROOT)
 TMP_PATH="{}/tmp".format(REPORTS_PATH)
-KEYVALUE_FILE="{}/keyvalues.tex".format(TMP_PATH)
 
 if not os.path.isdir(REPORTS_PATH):
         os.makedirs(REPORTS_PATH)
@@ -35,15 +36,9 @@ if not os.path.isdir(REPORTS_PATH):
 if not os.path.isdir(TMP_PATH):
         os.makedirs(TMP_PATH)
 
-LOG_PATH="/mnt/usb_storage/netperf/log"
-LOG_FILE="{}/netperf.log".format(LOG_PATH)
-
-if not os.path.isdir(LOG_PATH):
-        os.makedirs(LOG_PATH)
-
-logging.basicConfig(filename=LOG_FILE,level=logging.INFO)
-netperf_report_log = logging.getLogger('netperf.reporting')
-netperf_report_log.setLevel(logging.INFO)
+logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
+report_log = logging.getLogger("daily report")
+report_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 def fractional_hour(timestamp):
 	# convert timestamp to fractional hour e.g. timestamp = 13:30 -> 13.5, timestamp = 15:45 -> 15.75 etc.
@@ -78,12 +73,12 @@ def main():
 			except:
 				query_date = yesterday
 			if query_date > midnight:
-				netperf_report_log.error("Invalid report date; cannot generate a report for future dates.")
+				report_log.error("Invalid report date; cannot generate a report for future dates.")
 				return
 	else:
 		query_date = yesterday
 
-	netperf_report_log.info("Generating network performance report for date {}".format(query_date.strftime("%Y-%m-%d")))
+	report_log.info("Generating network performance report for date {}".format(query_date.strftime("%Y-%m-%d")))
 
 	main_replacement_values["<CLIENT_ID>"] = CLIENT_ID
 	main_replacement_values["<QUERY_DATE>"] = query_date.strftime("%Y-%m-%d")
@@ -95,9 +90,7 @@ def main():
 
 	rows = db.get_speedtest_data(query_date)
 	if len(rows) == 0:
-		netperf_report_log.error("No speedtest data available for date {}".format(query_date.strftime("%Y-%m-%d")))
-		return
-
+		report_log.error("No speedtest data available for date {}".format(query_date.strftime("%Y-%m-%d")))
 	speedtest_data={}
 	speedtest_data["rx_Mbps"] = {}
 	speedtest_data["rx_Mbps"]["raw"] = []
@@ -121,8 +114,7 @@ def main():
 		speedtest_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
 		if (r["rx_Mbps"] == 0) or (r["tx_Mbps"] == 0):
 			speedtest_data["outages"]["times"].append(fractional_hour(r["timestamp"]))
-
-	# create numpy arrays used for averaging
+		# create numpy arrays used for averaging
 	speedtest_data["rx_Mbps"]["np_array"] = np.array(speedtest_data["rx_Mbps"]["raw"])
 	speedtest_data["tx_Mbps"]["np_array"] = np.array(speedtest_data["tx_Mbps"]["raw"])
 	speedtest_data["ping"]["np_array"] = np.array(speedtest_data["ping"]["raw"])
@@ -177,6 +169,11 @@ def main():
 	axes["ping"].tick_params(axis='y', labelcolor="xkcd:red")
 	lines["ping"] = axes["ping"].plot(speedtest_data["times"]["raw"], speedtest_data["ping"]["raw"], color="xkcd:red", linewidth=1,linestyle=':',marker="",label="Latency (ms)")
 	linesum = lines["rx"] + lines["tx"] + lines["ping"]
+
+	if len(rows) == 0:
+		### TEXT TEST
+		axes["ping"].text(3,0,"There are no speedtest results for the reporting day.")
+
 	if len(isp_outages["times"]) > 0:
 		# plot isp outage times on chart
 		lines["isp_outages"] = axes["rx_tx"].plot(isp_outages["times"],isp_outages["y_values"],color="xkcd:red",zorder=2,marker="D",linestyle="None", label="Internet outage")
@@ -286,7 +283,7 @@ def main():
 		bandwidth_report_macro= "\\input{{{}}}\n".format("bandwidth_report.tex")
 		main_replacement_values["<BANDWIDTH_REPORT>"] = bandwidth_report_macro
 	else:
-		netperf_report_log.info("No bandwidth data available for date {}".format(query_date.strftime("%Y-%m-%d")))
+		report_log.info("No bandwidth data available for date {}".format(query_date.strftime("%Y-%m-%d")))
 		main_replacement_values["<BANDWIDTH_REPORT>"] = ""
 
 	max_dns_failures = 1
@@ -469,13 +466,50 @@ def main():
 			f.write(interface_tex)
 			f.close()
 
+        st_data_usage = db.get_speedtest_data_usage(datetime.today())
+        test_count = st_data_usage[0]["test_count"]
+        if test_count > 0:
+                rxtx_MB = long(st_data_usage[0]["rxtx_bytes"])/long(1e6)
+                avg_rxtx_MB = float(rxtx_MB)/float(test_count)
+        else:
+                rxtx_MB = 0
+                avg_rxtx_MB = 0
+
+	ns = netperf_settings()
+	eq = ns.get_speedtest_enforce_quota()
+	if eq == True:
+		enforce_quota = "Yes"
+		data_usage_quota_GB = ns.get_data_usage_quota_GB()
+		data_usage_quota_GB_text = str(data_usage_quota_GB)
+		data_usage_quota_units = "GB"
+		data_usage_info = db.get_data_usage()
+		data_usage_GB = float(data_usage_info["rxtx_bytes"])/float(1e9)
+		data_usage_GB_text = "{:0.2f}".format(data_usage_GB)
+		data_usage_GB_units = "GB"
+	else:
+		enforce_quota = "No"
+		data_usage_quota_GB_text = "n/a"
+		data_usage_quota_units = ""
+		data_usage_GB_text = "n/a"
+		data_usage_GB_units = ""
+
+	if (eq == True and data_usage_GB + (float(avg_rxtx_MB)/1000) >= float(data_usage_quota_GB)):
+		quota_warning = "\\textbf{The daily maximum data allowance for Internet speedtests was reached on the reporting day. One or more speedtests may have been cancelled because of this.}"
+	else:
+		quota_warning = ""
 
 	main_replacement_values["<RX_MBPS_AVG>"] = str(round(speedtest_data["averages"]["rx_Mbps"],2))
 	main_replacement_values["<TX_MBPS_AVG>"] = str(round(speedtest_data["averages"]["tx_Mbps"],2))
 	main_replacement_values["<LATENCY_AVG>"] = str(round(speedtest_data["averages"]["ping"],2))
 	main_replacement_values["<RX_MB>"] = str(round(float(rx_bytes)/float(1e6),2))
 	main_replacement_values["<TX_MB>"] = str(round(float(tx_bytes)/float(1e6),2))
-	main_replacement_values["<RXTX_MB>"] = str(round(float(rx_bytes + tx_bytes)/float(1e6),2))
+	main_replacement_values["<RXTX_MB>"] = str(round(float(rxtx_MB),2))
+	main_replacement_values["<RXTX_AVG_MB>"] = str(round(avg_rxtx_MB,2))
+	main_replacement_values["<DATA_USAGE_GB>"] = data_usage_GB_text
+	main_replacement_values["<DATA_USAGE_UNITS>"] = data_usage_GB_units
+	main_replacement_values["<DATA_QUOTA_GB>"] = data_usage_quota_GB_text
+	main_replacement_values["<DATA_QUOTA_UNITS>"] = data_usage_quota_units
+	main_replacement_values["<QUOTA_WARNING>"] = quota_warning
 
 	interface_reports_macro = ""
 	for i in iperf3_interfaces:

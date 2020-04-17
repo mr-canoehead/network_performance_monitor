@@ -13,11 +13,13 @@ import getopt,sys
 import util
 import logging
 from netperf_db import db_queue
+from netperf_settings import netperf_settings
 
-logging.basicConfig(filename='/mnt/usb_storage/netperf/log/netperf.log',level=logging.ERROR)
-logging.basicConfig(filename='/tmp/netperf.log',level=logging.ERROR)
-bwmonitor_log = logging.getLogger('netperf.bwmonitor')
+NETPERF_SETTINGS = netperf_settings()
+
+logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
 bwmonitor_log = logging.getLogger('bwmonitor')
+bwmonitor_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 def bwmonitor(interface):
 	client_id = util.get_client_id()
@@ -28,12 +30,10 @@ def bwmonitor(interface):
 	try:
 		rx_bytes_file = open("{}/rx_bytes".format(STATS_PATH))
 	except:
-		bwmonitor_log.critical("Unable to open stats file for interface {}".format(interface))
 		sys.exit(2)
 	try:
 		tx_bytes_file = open("{}/tx_bytes".format(STATS_PATH))
 	except:
-		bwmonitor_log.critical("Unable to open stats file for interface {}".format(interface))
 		sys.exit(2)
 
 	last_rx_bytes = None
@@ -41,7 +41,6 @@ def bwmonitor(interface):
 	last_time = None
 
 	dbq = db_queue()
-
 	while True:
         	loop_start_time = time.time()
         	rx_bytes_file.seek(0)
@@ -51,20 +50,17 @@ def bwmonitor(interface):
         	if last_time is not None:
 	                if last_rx_bytes > rx_bytes:
         	                # rollover occurred
-				bwmonitor_log.debug("Rollover on rx_bytes")
                         	rx_bytes_delta = rx_bytes + (MAX_32UINT - last_rx_bytes)
           	 	else:
                 	        rx_bytes_delta = rx_bytes - last_rx_bytes
                		if last_tx_bytes > tx_bytes:
                         	# rollover occurred
-				bwmonitor_log.debug("Rollover on tx_bytes")
                         	tx_bytes_delta = tx_bytes + (MAX_32UINT - last_tx_bytes)
                 	else:
                         	tx_bytes_delta = tx_bytes - last_tx_bytes
                 	time_delta = loop_start_time - last_time
                 	rx_bps = float(rx_bytes_delta * 8) / time_delta
                 	tx_bps = float(tx_bytes_delta * 8) / time_delta
-			bwmonitor_log.debug("rx_Mbps: {} tx_Mbps: {}".format(round(rx_bps/1e6,2),round(tx_bps/1e6,2)))
                 	bw_data = { "type" : "bandwidth", \
                             		"data" : {  "client_id" : client_id, \
                                         "timestamp" : loop_start_time, \
@@ -88,6 +84,7 @@ def bwmonitor(interface):
 				pass
 
 if __name__ == '__main__':
+	bwmonitor_log.debug("__main__")
 	fullCmdArguments = sys.argv
 	argumentList = fullCmdArguments[1:]
 	unixOptions = "i:l:"
@@ -101,7 +98,7 @@ if __name__ == '__main__':
 			sys.exit(2)
 
 	interface = None
-
+	bwmonitor_log.debug("Processing argument list...")
 	for currentArgument, currentValue in arguments:
 		if currentArgument in ("-i", "--interface"):
 			interface = currentValue
@@ -117,12 +114,15 @@ if __name__ == '__main__':
 				bwmonitor_log.setLevel(logging.ERROR)
 			if loglevel == "critical":
 				bwmonitor_log.setLevel(logging.CRITICAL)
+	bwmonitor_log.debug("Watching interface: {}".format(interface))
 	if interface == None:
+		print "Error: an interface is required."
 		bwmonitor_log.error("An interface is required.")
 		sys.exit(2)
 
-	with daemon.DaemonContext():
-    		bwmonitor(interface)
+	daemon_context = daemon.DaemonContext()
+	with daemon_context:
+		bwmonitor(interface)
 
 
 

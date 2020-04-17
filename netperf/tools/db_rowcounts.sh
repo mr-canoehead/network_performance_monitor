@@ -1,6 +1,4 @@
 #!/bin/bash
-# This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
-# See the file LICENSE for full license details.
 
 declare -a tables
 
@@ -9,12 +7,12 @@ tables+=( "ping" )
 tables+=( "iperf3" )
 tables+=( "dns" )
 tables+=( "speedtest" )
+tables+=( "data_usage" )
 tables+=( "isp_outages" )
 
-client_id=$(cat /proc/cpuinfo | grep Serial | awk '{print $3}' | sed 's/^0*//')
-database="/mnt/usb_storage/netperf/$client_id/database/$client_id.db"
-printf "\nDatabase file: %s\n\n" "$database"
+database=$( python /opt/netperf/netperf_settings.py --get db_filename )
 
+printf "\nDatabase file: %s\n\n" "$database"
 printf "%-12s %s\n" "Table" "Rowcount"
 printf "%-12s %s\n" "-----" "--------"
 

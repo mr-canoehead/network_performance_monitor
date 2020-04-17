@@ -9,19 +9,22 @@ import sqlite3
 import json
 from sqlite3 import Error
 import posix_ipc
+import sys
 import util
 import logging
 import os
+from netperf_settings import netperf_settings
 
 client_id = util.get_client_id()
 
-DATA_PATH = "/mnt/usb_storage/netperf/{}/database".format(client_id)
-NETPERF_DB = "{}/{}.db".format(DATA_PATH,client_id)
+NETPERF_SETTINGS = netperf_settings()
 
-NETPERF_QUEUE = "/netperfdb.write"
+DATA_PATH = NETPERF_SETTINGS.get_db_path()
+NETPERF_DB = NETPERF_SETTINGS.get_db_filename()
 
-LOG_PATH = "/mnt/usb_storage/netperf/log"
-LOG_FILE = "{}/netperf.log".format(LOG_PATH)
+DB_WRITE_QUEUE = NETPERF_SETTINGS.get_db_write_queue_name()
+LOG_PATH = NETPERF_SETTINGS.get_log_path()
+LOG_FILE = NETPERF_SETTINGS.get_log_filename()
 
 if not os.path.isdir(DATA_PATH):
 	os.makedirs(DATA_PATH)
@@ -29,9 +32,9 @@ if not os.path.isdir(DATA_PATH):
 if not os.path.isdir(LOG_PATH):
 	os.makedirs(LOG_PATH)
 
-logging.basicConfig(filename=LOG_FILE,level=logging.ERROR)
-netperf_db_log = logging.getLogger('netperf.db')
-netperf_db_log.setLevel(logging.INFO)
+logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
+db_log = logging.getLogger("netperf_db")
+db_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 def start_end_timestamps(query_date):
 	# given a datetime, return a tuple containing timestamps representing the earliest time
@@ -121,6 +124,13 @@ class netperf_db:
 				PRIMARY KEY (client_id,epoch_time)
 				);"""
 
+		sql_create_data_usage_table = """ CREATE TABLE IF NOT EXISTS data_usage (
+                                        client_id text NOT NULL,
+                                        epoch_time real NOT NULL,
+					rxtx_bytes integer NOT NULL,
+                                        PRIMARY KEY (client_id,epoch_time)
+                                    ); """
+
 		if self.db_conn is not None:
 			create_table(self.db_conn, sql_create_isp_outage_table)
 			create_table(self.db_conn, sql_create_speedtest_table)
@@ -128,6 +138,7 @@ class netperf_db:
 			create_table(self.db_conn, sql_create_ping_table)
 			create_table(self.db_conn, sql_create_dns_table)
 			create_table(self.db_conn, sql_create_bandwidth_table)
+			create_table(self.db_conn, sql_create_data_usage_table)
 		else:
 			print("Error! cannot create the database connection.")
 
@@ -170,7 +181,6 @@ class netperf_db:
 		return cur.lastrowid
 
 	def log_iperf3(self, data):
-
 		row_data = ( data["client_id"], \
 			     data["timestamp"], \
 			     data["remote_host"], \
@@ -218,6 +228,29 @@ class netperf_db:
 		cur.close()
 		return cur.lastrowid
 
+	def log_data_usage(self,data):
+		db_log.debug("start of log_data_usage")
+                cur = self.db_conn.cursor()
+                cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
+                col_rxtx_bytes=0
+                query_results = cur.fetchall()
+		db_log.debug("length of query results: {}".format(len(query_results)))
+		if len(query_results) > 0:
+			current_rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+		else:
+			current_rxtx_bytes = 0
+		new_rxtx_bytes = current_rxtx_bytes + long(data["rxtx_bytes"])
+		db_log.debug("new_rxtx_bytes: {}".format(new_rxtx_bytes))
+                row_data = ( data["client_id"], \
+                            data["timestamp"], \
+                            new_rxtx_bytes )
+		db_log.debug("row_data: {}".format(row_data))
+                sql = '''INSERT OR IGNORE INTO data_usage(client_id,epoch_time,rxtx_bytes)
+                        VALUES(?,?,?);'''
+                cur.execute(sql, row_data)
+                self.db_conn.commit()
+                cur.close()
+                return cur.lastrowid
 
 	def log_dns(self, dns_results):
                 # unpack dns_results tuple
@@ -292,6 +325,48 @@ class netperf_db:
 					"remote_host" : i[col_remote_host],\
 					"url" : i[col_url]})
 		cur.close()
+		return results
+
+	#def delete_speedtest_data(self,query_date):
+	#	(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
+	#	cur = self.db_conn.cursor()
+	#	cur.execute("DELETE FROM speedtest where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+	#	cur.close()
+	#	self.db_conn.commit()
+
+	def get_speedtest_data_usage(self,query_date):
+		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
+		cur = self.db_conn.cursor()
+		cur.execute("SELECT COUNT(*) AS test_count, SUM(rx_bytes + tx_bytes) AS rxtx_bytes FROM speedtest where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		col_test_count=0
+		col_rxtx_bytes=1
+		results=[]
+		query_results = cur.fetchall()
+		test_count = query_results[0][col_test_count]
+		if test_count == 0:
+			rxtx_bytes = 0
+		else:
+			rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+		results.append({"test_count" : test_count, \
+				"rxtx_bytes" : rxtx_bytes})
+		#db_log.info("Speedtest data usage: {}".format(results))
+		cur.close()
+		return results
+
+
+	def get_data_usage(self):
+		db_log.debug("start of get_data_usage")
+                cur = self.db_conn.cursor()
+                cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
+                col_rxtx_bytes=0
+                query_results = cur.fetchall()
+		cur.close()
+		db_log.debug("length of query results: {}".format(len(query_results)))
+		if len(query_results) > 0:
+			rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+		else:
+			rxtx_bytes = long(0)
+		results={"rxtx_bytes" : rxtx_bytes}
 		return results
 
 	def get_iperf3_data(self,query_date):
@@ -444,12 +519,12 @@ class netperf_db:
 		if timestamp is not None:
 			prune_date = datetime.datetime.fromtimestamp(timestamp)
 		else:
-			netperf_db_log.error("prune: invalid timestamp")
+			db_log.error("prune: invalid timestamp")
 			return
 		(start_timestamp, end_timestamp) = start_end_timestamps(prune_date)
 		#select name from sqlite_master where type = 'table';
 		cur = self.db_conn.cursor()
-		netperf_db_log.info("pruning database rows")
+		db_log.info("pruning database rows")
 		cur.execute("SELECT NAME FROM sqlite_master where type = 'table'")
 		for t in cur.fetchall():
 			table_name = t[0]
@@ -464,6 +539,16 @@ class netperf_db:
 		cur.close()
 		self.db_conn.commit()
 
+
+	def data_usage_reset(self,data):
+		# resets data usage to zero
+		timestamp = time.time()
+		cur = self.db_conn.cursor()
+		query = "INSERT INTO data_usage (client_id,epoch_time,rxtx_bytes) VALUES('{}','{}','{}')".format(client_id,timestamp,str(0));
+		cur.execute(query)
+		cur.close()
+		self.db_conn.commit()
+
 	def close(self):
 		try:
 			self.db_conn.commit()
@@ -475,9 +560,9 @@ class db_queue():
 	queue = None
 	def __init__(self):
 		try:
-	        	self.queue = posix_ipc.MessageQueue(NETPERF_QUEUE, posix_ipc.O_CREX)
+	        	self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE, posix_ipc.O_CREX)
 		except:
-        		self.queue = posix_ipc.MessageQueue(NETPERF_QUEUE)
+        		self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE)
 
 	def write(self,json_object):
 		self.queue.send(json.dumps(json_object))
@@ -488,7 +573,7 @@ class db_queue():
 			json_data = json.loads(message)
 		except:
 			json_data = None
-			netperf_db_log.error("received invalid message: {}".format(str(message)))
+			db_log.error("received invalid message: {}".format(str(message)))
 		return ( json_data, priority )
 
 if __name__ == '__main__':
@@ -497,7 +582,7 @@ if __name__ == '__main__':
 	sigterm_h = util.sigterm_handler()
 
 	def invalid(data):
-		netperf_db_log.error("Invalid message type: {}".format(data.get("type",None)))
+		db_log.error("Invalid message type: {}".format(data.get("type",None)))
 
 	def function_map(type):
 		switcher = {
@@ -507,26 +592,30 @@ if __name__ == '__main__':
 			"iperf3": db.log_iperf3,
 			"dns": db.log_dns,
 			"isp_outage": db.log_isp_outage,
-			"prune": db.prune
+			"data_usage": db.log_data_usage,
+			"prune": db.prune,
+			"data_usage_reset": db.data_usage_reset
 		}
 		return switcher.get(type, invalid)
 
 	while not sigterm_h.terminate:
 		message, priority = dbq.read()
+		db_log.debug(message)
 		if message is not None:
 			type = message.get("type",None)
+			db_log.debug("message type is: {}".format(type))
 			data = message.get("data",None)
-			#netperf_db_log.error("received invalid message: {}".format(str(message)))
+			#db_log.error("received invalid message: {}".format(str(message)))
 			#continue
-			netperf_db_log.debug("received message type: {} data: {}".format(type,json.dumps(data)))
+			db_log.debug("received message type: {} data: {}".format(type,json.dumps(data)))
 
 		else:
 			type = "undefined"
 			data = {"error" : "unable to parse json object"}
-			netperf_db_log.error("received undefined message")
+			db_log.error("received undefined message")
 			continue
 		try:
 			function_map(type)(data)
 		except:
-			netperf_db_log.error("error occurred while writing to the database")
+			db_log.error("error occurred while writing to the database")
 	db.close()

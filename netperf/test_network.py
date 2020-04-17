@@ -5,21 +5,22 @@
 
 import os
 import json
+from datetime import datetime
 from subprocess import check_output,Popen,STDOUT,PIPE
 import sys
 import util
 import time
-from netperf_db import db_queue
+from netperf_db import netperf_db,db_queue
+from netperf_settings import netperf_settings
 import logging
 
 client_id = util.get_client_id()
 
-logging.basicConfig(filename='/mnt/usb_storage/netperf/log/netperf.log',level=logging.INFO)
-test_log = logging.getLogger('netperf.test_network')
-test_log.setLevel(logging.INFO)
+NETPERF_SETTINGS = netperf_settings()
 
-#logging.basicConfig(filename='netperf.log',level=logging.DEBUG)
-#logger = logging.getLogger('netperf.test_network')
+logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
+test_log = logging.getLogger("test_network")
+test_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 def pingtest(test_exec_namespace,remote_host,dbq):
 	if test_exec_namespace is not None:
@@ -169,12 +170,19 @@ def test_isp(test_exec_namespace,dbq):
 				"ping" : ping}
                           }
 	dbq.write(st_data)
+	if NETPERF_SETTINGS.get_speedtest_enforce_quota() == True:
+		# send data usage info to the database for data usage quota enforcement
+		data_usage = { "type" : "data_usage", \
+				"data" : { "client_id" : client_id, \
+					   "timestamp" : time.time(), \
+					   "rxtx_bytes" : long(rx_bytes) + long(tx_bytes)}
+				}
+		dbq.write(data_usage)
 
 	return test_status
 
 def test_name_resolution(test_exec_namespace,dbq):
 	test_log.info("Testing name resolution...")
-	#logger.debug("Testing name resolution...")
 	EXTERNAL_DNS_SERVERS=['8.8.8.8','8.8.4.4','1.1.1.1','9.9.9.9']
 	if test_exec_namespace is not None:
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
@@ -260,19 +268,42 @@ def main():
 					test_local_network(test_exec_namespace, interfaces[i]["alias"],dbq)
 		else:
 			if sys.argv[1] == 'isp':
-				test_ok = test_isp(test_exec_namespace,dbq)
-				if not test_ok:
-					# speedtest failed, test for an Internet outage outage
-					ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
-					(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
-					if min == 0 or max == 0:
-						# log an outage
-						outage_data = {"type": "isp_outage",\
-								"data" : { \
-									"client_id" : client_id, \
-									"timestamp" : timestamp} \
-								}
-						dbq.write(outage_data)
+				db_filename = NETPERF_SETTINGS.get_db_filename()
+				db = netperf_db(db_filename)
+				enforce_quota = NETPERF_SETTINGS.get_speedtest_enforce_quota()
+				data_usage_quota_GB = NETPERF_SETTINGS.get_data_usage_quota_GB()
+				data_usage_GB = float(db.get_data_usage()["rxtx_bytes"])/float(1e9)
+				test_log.info("data usage GB: {:0.2f}".format(data_usage_GB))
+				if enforce_quota == True:
+					st_data_usage = db.get_speedtest_data_usage(datetime.today())
+					test_count = st_data_usage[0]["test_count"]
+					if test_count > 0:
+						rxtx_GB = float(st_data_usage[0]["rxtx_bytes"])/float(1e9)
+						avg_rxtx_GB = float(rxtx_GB)/float(test_count)
+					else:
+						rxtx_GB = float(0)
+						avg_rxtx_GB = float(0)
+					if (data_usage_GB + avg_rxtx_GB) > data_usage_quota_GB:
+						quota_reached = True
+					else:
+						quota_reached = False
+
+				if not (enforce_quota == True and quota_reached == True):
+					test_ok = test_isp(test_exec_namespace,dbq)
+					if not test_ok:
+						# speedtest failed, test for an Internet outage outage
+						ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
+						(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
+						if min == 0 or max == 0:
+							# log an outage
+							outage_data = {"type": "isp_outage",\
+									"data" : { \
+										"client_id" : client_id, \
+										"timestamp" : timestamp} \
+									}
+							dbq.write(outage_data)
+				else:
+					test_log.error("Data usage quota has been reached, speedtest was cancelled. Data usage quota: {:0.2f} Data usage since last reset: {:0.2} GB, average data usage per test: {:0.2f} GB".format(data_usage_quota_GB,data_usage_GB,avg_rxtx_GB))
 			else:
 				if sys.argv[1] == 'dns':
 					dns_ok = test_name_resolution(test_exec_namespace,dbq)
@@ -300,10 +331,10 @@ def main():
 										"avg" : avg, \
 										"max" : max, \
 										"mdev" : mdev}}
-						#logger.info("sending ping data to database")
 						#dbq.write(message)
 
 						if min == 0 or max == 0:
+							test_log.info("Internet outage detected.")
 							outage_data = {"type": "isp_outage",\
 									"data" : { \
 										"client_id" : client_id, \

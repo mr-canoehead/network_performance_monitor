@@ -22,15 +22,27 @@ This chart plots Internet speedtest results, including the download and upload s
 \end{center}
 \subsection{Data summary}
 %\medskip
+\begin{minipage}[t]{0.5\textwidth}
 \begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}}
-Speedtest data usage: & <RXTX_MB> & MB \\
 Average download speed: & <RX_MBPS_AVG> & Mbps \\
 Average upload speed: & <TX_MBPS_AVG> & Mbps \\
 Average latency: & <LATENCY_AVG> & ms \\
 Internet outages: & <ISP_OUTAGES> & \\
 \end{tabular}
+\end{minipage}
+\begin{minipage}[t]{0.5\textwidth}
+\begin{flushright}
+\begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}}
+Daily speedtest data usage: & <RXTX_MB> & MB \\
+Average data usage per test: & <RXTX_AVG_MB> & MB \\
+Total data usage since last reset: & <DATA_USAGE_GB> & <DATA_USAGE_UNITS> \\
+Data usage quota: & <DATA_QUOTA_GB> & <DATA_QUOTA_UNITS>\\
+\end{tabular}
+\end{flushright}
+\end{minipage}
 
 \medskip
+<QUOTA_WARNING>
 
 <OUTAGE_INFO>
 %\pagebreak

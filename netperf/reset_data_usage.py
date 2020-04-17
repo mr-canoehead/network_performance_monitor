@@ -6,11 +6,12 @@ import sys
 import util
 from datetime import datetime, timedelta
 from netperf_db import db_queue
+from util import get_client_id
+
+client_id = get_client_id()
 
 dbq = db_queue()
-today = datetime.now()
-prune_date = today - timedelta(days=8)
-timestamp = (prune_date - datetime(1970,1,1)).total_seconds()
-message = { "type" : "prune",\
-	    "data" : { "timestamp" : timestamp } }
+
+message = { "type" : "data_usage_reset",\
+	    "data" : { "client_id" : client_id } }
 dbq.write(message)

@@ -10,6 +10,9 @@
 import os
 import json
 import sys
+import logging
+from netperf_settings import netperf_settings
+
 class bcolors:
         FAIL = '\033[91m'
 	WARNING = '\033[93m'
@@ -21,9 +24,14 @@ IF_INFO_PATH="/sys/class/net"
 # JSON file containing interface configuration info
 CONFIG_PATH="/opt/netperf/config"
 INTERFACES_FILE=CONFIG_PATH + "/interfaces.json"
-
 FORCE_CONFIGURE = False
 DISABLE_CONFIGURE = False
+NETPERF_SETTINGS = netperf_settings()
+
+logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
+configure_log = logging.getLogger("configure_interfaces")
+configure_log.setLevel(NETPERF_SETTINGS.get_log_level())
+
 if len(sys.argv) > 1:
 	arg = str(sys.argv[1])
 	if (arg == "-f") or (arg == "--force"):
@@ -66,7 +74,7 @@ with open(INTERFACES_FILE,"r+") as json_file:
 	json_file.close()
 
 #### Configure the bandwidth monitoring bridge
-
+print ("Configuring the bandwidth monitoring bridge...")
 bridge_info = interface_info["bandwidth_monitor_bridge"]
 if bridge_info["configure"] == True:
 	bridge_namespace = bridge_info["namespace"]
@@ -97,7 +105,7 @@ if bridge_info["configure"] == True:
 	os.system("{} /sbin/runuser -l pi -c 'python /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,modem_interface))
 
 #### Configure the performance testing interfaces
-
+print ("Configuring the performance testing interfaces...")
 root_namespace_interfaces = 0
 for interface in network_interfaces:
 	if_details = network_interfaces[interface]
