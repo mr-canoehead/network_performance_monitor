@@ -276,36 +276,6 @@ do
 	done
 done
 
-
-######
-
-root_ns_if_name=""
-for s in "${selected[@]}"
-do
-	echo "interface: $s namespace: ${interface_namespaces[$s]}"
-	if [[ "${interface_namespaces[$s]}" == "root" ]]; then
-		root_ns_if_name="$s"
-		break
-	fi
-done
-
-if [[ "$root_ns_if_name" == "" ]]; then
-	result=$(whiptail --title "$TITLE" --yesno "There are no network interfaces assigned to the root network namespace.\nDo you want to move one of the interfaces to the root network namespace?\nThis should be done if you intend to run other services such as web servers on this computer." 10 80 3>&1 1>&2 2>&3)
-	if [[ "$?" == 0 ]]; then
-		interface_choices=""
-		# build menu choice list for root network namespace interface
-		for i in "${selected[@]}"
-		do
-			interface_choices="$interface_choices $i $i"
-		done
-		# prompt user to select interface for the root network namespace
-		root_ns_interface=$(whiptail --title "$TITLE" --menu --nocancel "Choose the interface that will be moved to the root network namespace." 15 80 3 --noitem ${interface_choices[@]} 3>&1 1>&2 2>&3)
-		whiptail --title "$TITLE" --msgbox "The network interface $root_ns_interface will be moved to the root network namespace." 10 80 3>&1 1>&2 2>&3
-	fi
-fi
-exit 0
-#########################################################################
-
 ###### wpa_supplicant configuration for wireless interfaces
 
 show_wifi_config_msg=true
