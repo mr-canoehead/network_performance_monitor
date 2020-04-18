@@ -17,6 +17,12 @@ if [[ $EUID -ne 0 ]]; then
         exit 1
 fi
 
+# check that Predictable Network Interface Names is enabled
+if [[ -L "/etc/systemd/network/99-default.link" ]]; then
+	whiptail --title "$TITLE" --msgbox "Error: the Network Performance Monitor requires that Predictable Network Interface Names be enabled. It is not currently enabled. Please run raspi-config again and select the option:\n\n2 Network Options\n    N3 Network interface names - Enable/Disable predictable network interface names\n        Choose 'Yes'\n\nThis setting requires a reboot to take effect, after enabling Predictable Network Interface Names please reboot the system and run this setup script again." 15 100 3>&1 1>&2 2>&3
+	exit 1
+fi
+
 valid_dir=false
 write_access=false
 cancel=false
