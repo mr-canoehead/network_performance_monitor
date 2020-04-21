@@ -1,64 +1,117 @@
 \documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
 \usepackage{titlesec}
 \usepackage[margin=1in]{geometry}
 \usepackage{graphicx}
 \usepackage{grffile}
 \usepackage{longtable}
+\usepackage{pgfkeys}
+\usepackage{pgffor}
+\usepackage{etoolbox}
+\usepackage{pdftexcmds}
+% make underscore a reglar punctuation character, in case it is used in interface names.
+\catcode`\_=12
 
-%\usepackage{pgffor}
+% create shorthand \getval command
+\let\getval\pgfkeysvalueof
 
-\title{\vspace{-0.5in}\huge{Network Performance Analysis\\\large Daily test report for client id <CLIENT_ID>}\vspace{-0.5in}
+\title{\vspace{-0.5in}\huge{Network Performance Analysis\\\large Daily test report for client id \getval{main/client_id}}\vspace{-0.5in}
 }
 \begin{document}
+\input{report_keyvalues.tex}
 \setlength{\parindent}{0pt}
-\date{<QUERY_DATE>}
+\date{\getval{main/query_date}}
 \maketitle
 \section{Internet Service Performance}
 The main factors that affect your Internet service performance are download / upload speeds, latency, and domain name resolution. The network performance monitor runs various tests periodically thoughout the day to measure these factors, the results of those tests are summarized in the following sections.
 \subsection{Download / Upload Speeds, Latency, and Internet Outages}
 This chart plots Internet speedtest results, including the download and upload speeds in megabits per second (Mbps), and the latency (ping) in milliseconds. Keep in mind that these tests are run in parallel with any other Internet communication that may be occurring on your network. Network activity such as large downloads or media streaming sessions will affect these test results. 
 \begin{center}
-\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{<SPEEDTEST_CHART_NAME>}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{\getval{main/speedtest_chart_name}}
 \end{center}
 \subsection{Data summary}
 %\medskip
 \begin{minipage}[t]{0.5\textwidth}
 \begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}}
-Average download speed: & <RX_MBPS_AVG> & Mbps \\
-Average upload speed: & <TX_MBPS_AVG> & Mbps \\
-Average latency: & <LATENCY_AVG> & ms \\
-Internet outages: & <ISP_OUTAGES> & \\
+Average download speed: & \getval{main/metrics/rx_mbps_avg} & Mbps \\
+Average upload speed: & \getval{main/metrics/tx_mbps_avg} & Mbps \\
+Average latency: & \getval{main/metrics/latency_avg} & ms \\
+Internet outages: & \getval{main/isp_outages} & \\
 \end{tabular}
 \end{minipage}
 \begin{minipage}[t]{0.5\textwidth}
 \begin{flushright}
 \begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}}
-Daily speedtest data usage: & <RXTX_MB> & MB \\
-Average data usage per test: & <RXTX_AVG_MB> & MB \\
-Total data usage since last reset: & <DATA_USAGE_GB> & <DATA_USAGE_UNITS> \\
-Data usage quota: & <DATA_QUOTA_GB> & <DATA_QUOTA_UNITS>\\
+Daily speedtest data usage: & \getval{main/metrics/rxtx_mb} & MB \\
+Average data usage per test: & \getval{main/metrics/rxtx_avg_mb} & MB \\
+Total data usage since last reset: & \getval{data_usage/data_usage_gb} & \getval{data_usage/data_usage_units} \\
+Data usage quota: & \getval{data_usage/data_quota_gb} & \getval{data_usage/data_quota_units}\\
 \end{tabular}
 \end{flushright}
 \end{minipage}
 
 \medskip
-<QUOTA_WARNING>
+\getval{main/metrics/quota_warning}
 
-<OUTAGE_INFO>
+\getval{main/outage_info}
 %\pagebreak
-<BANDWIDTH_REPORT>
+\subsection{Bandwidth measurements}
+The system measures the amount of Internet traffic flowing between your modem and router. It uses the number of bits received and transmitted to calculate bandwidth usage in megabits per second (Mbps). The results of these bandwidth measurements are shown on the chart below. Note that the bandwidth values shown are averaged into \getval{bwmonitor/bin_width} minute intervals during the reporting day, so short bandwidth spikes (e.g. loading an image-heavy web page) are averaged into the \getval{bwmonitor/bin_width} minute interval during which they occur.
+\begin{center}	
+\newcommand{\bwmreadings}{\pdfstrcmp{\getval{bwmonitor/readings}}{True}}
+\ifnum\bwmreadings=0
+	\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{\getval{bwmonitor/chart_filename}}
+\else
+	\vspace*{\fill}
+	\Large There are no bandwidth readings for the reporting day.
+	\vspace*{\fill}
+\fi
+\end{center}
+
+\pagebreak
 
 \subsection{Domain name resolution}
 This chart plots the results of domain name resolution tests. The tests including internal DNS queries which use your network's default DNS server (normally this is your ISP's DNS server) and external DNS queries that use public DNS servers such as Google and Cloudflare. Slow DNS queries can make your Internet connection seem slow. Persistent DNS query failures can make your Internet service unreliable.
 \begin{center}
-\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{<DNS_CHART_NAME>}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{\getval{main/dns_chart_name}}
 \end{center}
 
 \pagebreak
 \section{Local Network Performance}
 The network performance monitor runs periodic tests of local networks using the \textbf{iperf3} program. The following charts plot the test results for each network interface (excluding the testing interface).
 
-<INTERFACE_REPORTS>
+\edef\interfaces{\getval{interfaces/interface_names}}
+\foreach \interface in \interfaces {
+	\ifdefined\interfaceName
+		\renewcommand{\interfaceName}{\expandafter\detokenize\expandafter{\interface}}
+	\else
+		\newcommand{\interfaceName}{\expandafter\detokenize\expandafter{\interface}}
+	\fi	
+
+\subsection{Performance information for network interface \interfaceName}
+Interface: \interfaceName
+\begin{center}
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio,scale=1]{\getval{interfaces/\interfaceName/chart_filename}}
+\end{center}
+
+\subsection{Data summary}
+
+\medskip
+\begin{tabular}{@{}l@{\hskip 0.1in}r@{\hskip 0.025in}l@{}}
+Average receive speed: & \getval{interfaces/\interfaceName/rx_mbps_avg} & Mbps \\
+Average transmit speed: & \getval{interfaces/\interfaceName/tx_mbps_avg} & Mbps \\
+Average retransmits: & \getval{interfaces/\interfaceName/retransmits_avg} &  \\
+Total outage intervals: & \getval{interfaces/\interfaceName/outage_intervals} & \\
+\end{tabular}
+
+\medskip
+
+\getval{interfaces/\interfaceName/outage_info}
+
+\pagebreak
+
+}
+
 
 \pagebreak
 \section{Internet speedtest data}
@@ -83,7 +136,7 @@ The following table contains the results of all Internet speed tests performed d
 \endfoot
 \hline \hline
 \endlastfoot
-<SPEEDTEST_TABLE_DATA>
+\getval{main/speedtest_table_data}
 \end{longtable}
 \medskip
 \huge End of report.
