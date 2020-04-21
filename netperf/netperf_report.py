@@ -169,6 +169,7 @@ def main():
 	speedtest_data["averages"]["ping"] = speedtest_data["ping"]["np_array"].mean()
 
 	### generate speedtest chart
+	report_log.debug("Generating speedtest chart.")
 	axes={}
 	fig, axes["rx_tx"] = plt.subplots()
 	axes["rx_tx"].set_title("Speedtest results for {}".format(query_date.strftime("%Y-%m-%d")))
@@ -225,9 +226,6 @@ def main():
 		report_log.error("Failed to copy report template file to the working directory.")
 		sys.exit(1)
 
-	###with open("{}/netperf_report_template.tex".format(REPORT_TEMPLATE_PATH)) as f:
-	###	report = f.read()
-
 	# generate LaTeX strings that will be used to print the speedtest data rows
 	speedtest_data["table_tex"] = ""
 	for r in rows:
@@ -237,6 +235,7 @@ def main():
 	rows = db.get_bandwidth_data(query_date)
 
 	if len(rows) > 0:
+		report_log.debug("Generating bandwidth usage chart.")
 		bin_width = 10
 		report_keyvals.add("bwmonitor/bin_width", str(bin_width))
 		rx_tbins = time_bins(bin_width)
@@ -303,6 +302,7 @@ def main():
 	max_dns_failures = 1
 	rows = db.get_dns_data(query_date)
 	if len(rows) > 0:
+		report_log.debug("Generating name resolution chart.")
 		dns_data={}
 		dns_data["internal"]={}
 		dns_data["internal"]["query_times"] = {}
@@ -387,6 +387,7 @@ def main():
 		iperf3_data["averages"] = {}
 		iperf3_interfaces.append(iperf3_data["remote_host"])
 		iperf3_rows = db.get_iperf3_interface_data(query_date,iperf3_data["remote_host"])
+		report_log.debug("Generating iperf3 chart for interface {}".format(iperf3_data["remote_host"]))
 		(fig,ax) = plt.subplots()
 		rx_Mbps=[]
 		tx_Mbps=[]
@@ -521,23 +522,28 @@ def main():
 	report_keyvals.add("data_usage/quota_warning", quota_warning)
 
 	# write report keyvalues to .tex file
+	report_log.debug("Writing report keyvalues...")
 	with open("{}/{}".format(TMP_PATH,"report_keyvalues.tex"),"w") as f:
 		f.truncate()
 		f.write(str(report_keyvals))
 		f.close()
 
 	# compile the report
-	report_filename="{}_{}_netperf".format(CLIENT_ID,query_date.strftime("%Y%m%d"))
+	report_filename="netperf_{}".format(query_date.strftime("%Y%m%d"))
 	cmd="cd {} && /usr/bin/pdflatex -output-directory={} -jobname={} {}".format(TMP_PATH,REPORTS_PATH,report_filename,"{}/{}".format(TMP_PATH,REPORT_TEMPLATE_FILENAME))
 
 	# LaTeX packages such as longtable sometimes require more than one compile, so try up to 3 times if needed.
 	compile_attempts = 0
 	compiled = False
 	while (compiled == False and compile_attempts < 3):
+		report_log.debug("Compiling report...")
 		ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 		(cmd_results,return_code) = ps.communicate()
-		if not cmd_results.lower().find("rerun"):
+		if "rerun" not in cmd_results.lower():
+			report_log.debug("Report compiled.")
 			compiled = True
+		else:
+			report_log.debug("Re-compile required.")
 		compile_attempts += 1
 
 	# clean up the temporary files created during report generation

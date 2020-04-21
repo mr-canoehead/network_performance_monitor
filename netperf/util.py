@@ -15,7 +15,7 @@ def nz_values(arr):
         return nzvalues
 
 def get_client_id():
-        cmd = "cat /proc/cpuinfo | grep Serial | awk '{print $3}'"
+	cmd = "sum /etc/machine-id | cut -f 1 -d ' '"
         ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
         (sn_str,return_code) = ps.communicate()
         return sn_str.strip().lstrip("0")
