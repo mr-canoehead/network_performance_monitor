@@ -15,7 +15,6 @@ packages+=( "dnsutils" )
 packages+=( "texlive-latex-recommended" )
 packages+=( "texlive-latex-extra" )
 packages+=( "texlive-fonts-recommended" )
-packages+=( "rubber" )
 packages+=( "git" )
 packages+=( "bc" )
 

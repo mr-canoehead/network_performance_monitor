@@ -7,7 +7,6 @@ from datetime import datetime,date,timedelta
 import time
 import sys
 import os
-import shutil
 from subprocess import check_output,Popen,STDOUT,PIPE
 import matplotlib
 matplotlib.use('Agg')
@@ -218,13 +217,6 @@ def main():
 	report_keyvals.add("main/speedtest_chart_name", chart_filename)
 	fig.savefig("{}/{}".format(TMP_PATH,chart_filename),format='pdf', bbox_inches='tight')
 	plt.cla()
-
-	# copy report template to the working directory
-	try:
-		shutil.copyfile("{}/{}".format(REPORT_TEMPLATE_PATH,REPORT_TEMPLATE_FILENAME),"{}/{}".format(TMP_PATH,REPORT_TEMPLATE_FILENAME))
-	except IOError:
-		report_log.error("Failed to copy report template file to the working directory.")
-		sys.exit(1)
 
 	# generate LaTeX strings that will be used to print the speedtest data rows
 	speedtest_data["table_tex"] = ""
@@ -530,7 +522,7 @@ def main():
 
 	# compile the report
 	report_filename="netperf_{}".format(query_date.strftime("%Y%m%d"))
-	cmd="cd {} && /usr/bin/pdflatex -output-directory={} -jobname={} {}".format(TMP_PATH,REPORTS_PATH,report_filename,"{}/{}".format(TMP_PATH,REPORT_TEMPLATE_FILENAME))
+	cmd="cd {} && /usr/bin/pdflatex -output-directory={} -jobname={} {}".format(TMP_PATH,REPORTS_PATH,report_filename,"{}/{}".format(REPORT_TEMPLATE_PATH,REPORT_TEMPLATE_FILENAME))
 
 	# LaTeX packages such as longtable sometimes require more than one compile, so try up to 3 times if needed.
 	compile_attempts = 0
