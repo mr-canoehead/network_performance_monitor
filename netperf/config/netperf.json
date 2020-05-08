@@ -1,12 +1,20 @@
 {
+    "db_write_queue": "/netperf.db", 
+    "bandwidth_monitor": {
+        "enabled": true
+    }, 
     "speedtest": {
         "data_usage_quota_GB": 0, 
         "enforce_quota": false
     }, 
-    "db_write_queue": "/netperfdb.write", 
-    "logging": {
-        "log_level": "INFO", 
-        "logger_format": "%(asctime)s %(name)s %(levelname)s:%(message)s"
+    "data_root": "/mnt/usb_storage/netperf", 
+    "dashboard": {
+        "clock_type_24hr": false, 
+        "enabled": true, 
+        "queue_name": "/netperf.dashboard"
     }, 
-    "data_root": "/mnt/usb_storage/netperf"
+    "logging": {
+        "log_level": "DEBUG", 
+        "logger_format": "%(asctime)s %(name)s %(levelname)s:%(message)s"
+    }
 }

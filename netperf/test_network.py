@@ -22,8 +22,14 @@ logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF
 test_log = logging.getLogger("test_network")
 test_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
+def default_nns(nns):
+	if nns in (None, "root"):
+		return True
+	else:
+		return False
+
 def pingtest(test_exec_namespace,remote_host,dbq):
-	if test_exec_namespace is not None:
+	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
 		cmd_prefix = ""
@@ -61,7 +67,7 @@ def pingtest(test_exec_namespace,remote_host,dbq):
 
 def test_local_network(test_exec_namespace, remote_host, dbq):
 	test_log.info("Testing interface {}".format(remote_host))
-	if test_exec_namespace is not None:
+	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
 		cmd_prefix = ""
@@ -124,7 +130,7 @@ def test_local_network(test_exec_namespace, remote_host, dbq):
 
 def test_isp(test_exec_namespace,dbq):
 	test_log.info("Testing Internet speed...")
-	if test_exec_namespace is not None:
+	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
 		cmd_prefix = ""
@@ -184,7 +190,7 @@ def test_isp(test_exec_namespace,dbq):
 def test_name_resolution(test_exec_namespace,dbq):
 	test_log.info("Testing name resolution...")
 	EXTERNAL_DNS_SERVERS=['8.8.8.8','8.8.4.4','1.1.1.1','9.9.9.9']
-	if test_exec_namespace is not None:
+	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
 		cmd_prefix = ""

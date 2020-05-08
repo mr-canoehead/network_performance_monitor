@@ -122,7 +122,7 @@ for interface in network_interfaces:
 		if not os.path.exists(IF_INFO_PATH + "/" + interface + "/phy80211"):
 			critical_error(interface + " does not appear to be a wireless network interface, please verify the interface configuration file.")
 		else:
-			if if_details['namespace'] is not None and if_details['namespace'] != "root":
+			if if_details['namespace'] is not None and (if_details['namespace'] not in ("root", "default")):
 				# check if interface supports switching network namespace
 				with open('/sys/class/net/' + interface + "/phy80211/name", 'r') as file:
    	 				if_details['phy_name'] = file.read().replace('\n', '')
@@ -152,7 +152,7 @@ print("Configuring interfaces for network performance monitoring:\n")
 for interface in network_interfaces:
 	if_details = network_interfaces[interface]
 	print("Configuring " + if_details['type'] + " interface " + interface)
-	if if_details['namespace'] is not None and if_details['namespace'] != "root":
+	if if_details['namespace'] is not None and (if_details['namespace'] not in ("root", "default")):
 		print("Adding network namespace " + if_details['namespace'])
 		os.system("/sbin/ip netns add " + if_details['namespace'])
 		cmd_prefix = "/sbin/ip netns exec " + if_details['namespace'] + " "

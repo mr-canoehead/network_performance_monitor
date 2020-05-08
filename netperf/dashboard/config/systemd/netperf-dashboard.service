@@ -1,0 +1,20 @@
+[Unit]
+Description = Network Performance Monitor Dashboard
+After = network.target
+
+[Service]
+PermissionsStartOnly = true
+PIDFile = /run/netperf/netperf-dashboard.pid
+User = pi
+Group = pi
+WorkingDirectory = /opt/netperf/dashboard/application
+ExecStartPre = /bin/mkdir /run/netperf
+ExecStartPre = /bin/chown -R pi:pi /run/netperf
+ExecStart = /usr/bin/env gunicorn dashboard:app --worker-class eventlet --timeout 30 -w 1 --threads 6 -b 0.0.0.0:8000 --pid /run/netperf/netperf-dashboard.pid
+ExecReload = /bin/kill -s HUP $MAINPID
+ExecStop = /bin/kill -s TERM $MAINPID
+ExecStopPost = /bin/rm -rf /run/netperf
+PrivateTmp = true
+
+[Install]
+WantedBy = multi-user.target

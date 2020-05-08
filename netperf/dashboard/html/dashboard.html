@@ -1,0 +1,74 @@
+<!--
+This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
+See the file LICENSE for full license details.
+-->
+
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<link rel="icon" type="image/png" href="images/speedometer.png">
+		<link rel="stylesheet" href="styles/dashboard.css">
+		<title>Network Performance Monitor</title>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.4/Chart.bundle.js"></script>
+		<script src="scripts/dashboard.js"></script>
+	</head>
+	<body>
+		<h1>Network Performance Monitor</h1>
+		<div class="tab">
+			<button id="internetMenuItem" class="tablinks" onclick="openView(event, 'internet')">Internet</button>
+			<button id="iperf3MenuItem" class="tablinks" onclick="openView(event, 'localnet')">Local network</button>
+			<button id="bandwidthDailyMenuItem" class="tablinks" style="display: none" onclick="openView(event, 'bandwidthDaily')">Bandwidth usage</button>
+			<button id="bwmonitorMenuItem" class="tablinks" onclick="openView(event, 'bwmonitor')">Bandwidth monitor</button>
+			<button id="reportingMenuItem" class="tablinks" onclick="openView(event, 'reporting')">Reports</button>
+			<button id="viewDate" class="tablinks" onclick="changeViewDate();">View date:&nbsp<span id="viewDateText">Today</span></button>
+		</div>
+		<div id="internet" class="tabcontent">
+			<div id="speedtest">
+				<canvas id="speedtestChart" width="400" height="200"></canvas>
+			</div>
+			<div id="dns">
+				<canvas id="dnsChart" width="400" height="200"></canvas>
+			</div>
+		</div>
+		<div id="localnet" class="tabcontent">
+			<div id="iperf3">
+				<p id="iperf3DataMessage">The local network performance charts are generated dynamically. There is currently no iperf3 data. This tab will update when iperf3 data is received from the server.</p>
+			</div>
+		</div>
+		<div id="bandwidthDaily" class="tabcontent">
+			<div class="box">
+				<canvas id="bandwidthDailyChart" width="400" height="200"></canvas>
+			</div>
+		</div>
+		<div id="bwmonitor" class="tabcontent">
+			<div class="box">
+				<canvas id="bandwidthChart" width="400" height="200"></canvas>
+			</div>
+		</div>
+		<div id="reporting" class="tabcontent">
+			<div id="reports">
+				<p id="reportFilesMessage">
+					There are currently no report files available.
+				</p>
+				<p>
+					<div id="reportFiles">
+					</div>
+				</p>
+			</div>
+		</div>
+		<div id="datePickerOverlay">
+			<div id="datePickerWindow">
+				<h2 id="datePickerTitle">View date:</h2>
+				<div id="datePickerToday" onclick="setViewDateToday();"><span class="buttonText">Today</span></div>
+				<div id="datePickerYesterday" onclick="setViewDateYesterday();"><span class="buttonText">Yesterday</span></div>
+				<div id="datePickerInputContainer">
+					<label id="datePickerInputLabel" for="datePickerInput">or pick a date:</label>
+					<input type="date", id="datePickerInput" name="datePickerInput" onchange="showDatePickerOk();"></input>
+				</div>
+				<div id="datePickerOk"><span class="buttonText">Ok</span></div>
+				<div id="datePickerCancel" onclick="hideDatePickerOverlay();"><span class="buttonText">Cancel</span></div>
+			</div>
+		</div>
+	</body>
+</html>

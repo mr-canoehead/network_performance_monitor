@@ -21,7 +21,6 @@ NETPERF_SETTINGS = netperf_settings()
 
 DATA_PATH = NETPERF_SETTINGS.get_db_path()
 NETPERF_DB = NETPERF_SETTINGS.get_db_filename()
-
 DB_WRITE_QUEUE = NETPERF_SETTINGS.get_db_write_queue_name()
 LOG_PATH = NETPERF_SETTINGS.get_log_path()
 LOG_FILE = NETPERF_SETTINGS.get_log_filename()
@@ -327,13 +326,6 @@ class netperf_db:
 		cur.close()
 		return results
 
-	#def delete_speedtest_data(self,query_date):
-	#	(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
-	#	cur = self.db_conn.cursor()
-	#	cur.execute("DELETE FROM speedtest where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
-	#	cur.close()
-	#	self.db_conn.commit()
-
 	def get_speedtest_data_usage(self,query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
@@ -349,7 +341,6 @@ class netperf_db:
 			rxtx_bytes = long(query_results[0][col_rxtx_bytes])
 		results.append({"test_count" : test_count, \
 				"rxtx_bytes" : rxtx_bytes})
-		#db_log.info("Speedtest data usage: {}".format(results))
 		cur.close()
 		return results
 
@@ -496,10 +487,21 @@ class netperf_db:
 		cur.close()
 		return results
 
-	def get_bandwidth_data(self,query_date):
+	def get_bandwidth_data(self,query_date = datetime.date.today(),minutes=0, rows=0):
+		# returns all bandwidth usage rows for the given date.
+		# if minutes is supplied as an argument, returns all rows within the past <minutes> minutes.
+		# if rows is supplied as an argument, returns the most recent <rows> rows of data.
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
+		minutes = int(minutes)
+		if query_date == datetime.date.today():
+			if minutes > 0:
+				start_timestamp = time.time() - 60*minutes
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM bandwidth where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		if rows > 0:
+			query = "SELECT * FROM bandwidth ORDER BY epoch_time DESC LIMIT {};".format(rows)
+		else:
+			query = "SELECT * FROM bandwidth where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp)
+		cur.execute(query)
 		col_time=1
 		col_rx_bytes=2
 		col_tx_bytes=3
@@ -513,6 +515,20 @@ class netperf_db:
 		cur.close()
 		return results
 
+
+	def get_isp_outage_data(self,query_date = datetime.date.today()):
+		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
+		cur = self.db_conn.cursor()
+		query = "SELECT * FROM isp_outages where epoch_time >= {} and epoch_time <= {};".format(start_timestamp,end_timestamp)
+		cur.execute(query)
+		col_time=1
+		results=[]
+		for i in cur.fetchall():
+			results.append({"timestamp" : i[col_time]})
+		cur.close()
+		return results
+
+
 	def prune(self,data):
 		# deletes all rows (in all tables) with an epoch_time <= latest time on given date
 		timestamp = data.get("timestamp",None)
@@ -522,7 +538,6 @@ class netperf_db:
 			db_log.error("prune: invalid timestamp")
 			return
 		(start_timestamp, end_timestamp) = start_end_timestamps(prune_date)
-		#select name from sqlite_master where type = 'table';
 		cur = self.db_conn.cursor()
 		db_log.info("pruning database rows")
 		cur.execute("SELECT NAME FROM sqlite_master where type = 'table'")
@@ -531,8 +546,6 @@ class netperf_db:
 			cur.execute("SELECT COUNT(*) AS CNTREC FROM pragma_table_info('{}') WHERE name='epoch_time'".format(table_name))
 			if cur.fetchall()[0] != 0:
 				cur.execute("DELETE FROM {} WHERE epoch_time < {}".format(table_name, end_timestamp))
-				#rowcount = cur.fetchall()[0][0]
-				#print "Will prune {} rows from table {}".format(rowcount,table_name)
 		# compact the database file
 		cur.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 		cur.execute("VACUUM")
@@ -576,9 +589,38 @@ class db_queue():
 			db_log.error("received invalid message: {}".format(str(message)))
 		return ( json_data, priority )
 
+class dashboard_queue():
+	queue = None
+	def __init__(self,queue_name):
+		try:
+			# open/create dashboard message queue in non-blocking mode. Non-blocking mode prevents the database daemon from blocking if the dashboard app fails to read from the queue.
+	        	self.queue = posix_ipc.MessageQueue(str(queue_name), posix_ipc.O_CREAT|posix_ipc.O_NONBLOCK)
+		except:
+			db_log.error("unable to open/create the dashboard message queue")
+			pass
+	def write(self,json_object):
+		self.queue.send(json.dumps(json_object))
+
+	def read(self):
+		( message, priority ) = self.queue.receive()
+		try:
+			json_data = json.loads(message)
+		except:
+			json_data = None
+			db_log.error("received invalid message: {}".format(str(message)))
+		return ( json_data, priority )
+
 if __name__ == '__main__':
 	db = netperf_db(NETPERF_DB)
 	dbq = db_queue()
+	if NETPERF_SETTINGS.get_dashboard_enabled() == True:
+		DASHBOARD_QUEUE = NETPERF_SETTINGS.get_dashboard_queue_name()
+	else:
+		DASHBOARD_QUEUE = None
+	if DASHBOARD_QUEUE is not None:
+		dashboard_q = dashboard_queue(DASHBOARD_QUEUE)
+	else:
+		dashboard_q = None
 	sigterm_h = util.sigterm_handler()
 
 	def invalid(data):
@@ -605,10 +647,13 @@ if __name__ == '__main__':
 			type = message.get("type",None)
 			db_log.debug("message type is: {}".format(type))
 			data = message.get("data",None)
-			#db_log.error("received invalid message: {}".format(str(message)))
-			#continue
 			db_log.debug("received message type: {} data: {}".format(type,json.dumps(data)))
-
+			if dashboard_q is not None:
+				try:
+					dashboard_q.write(message)
+				except:
+					#queue is full
+					db_log.debug("dashboard message queue is full.")
 		else:
 			type = "undefined"
 			data = {"error" : "unable to parse json object"}

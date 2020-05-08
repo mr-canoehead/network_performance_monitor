@@ -111,6 +111,25 @@ if [[ ! -d "$data_root/log" ]]; then
 	sudo -u pi touch "$data_root/log/netperf.log"
 fi
 
+# create the reports directory if it doesn't exist:
+if [[ ! -d "$data_root/reports" ]]; then
+	sudo -u pi mkdir -p "$data_root/reports"
+fi
+
+# link the reports directory to the dashboard html directory:
+ln -s "$data_root/reports" /opt/netperf/dashboard/html/reports
+
+# copy the dashboard website configuration file
+cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/sites-available
+ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netperf-dashboard
+
+# disable the default nginx website (it conflicts with the dashboard app website):
+unlink /etc/nginx/sites-enabled/default
+
+# copy the dashboard systemd unit file and enable the service
+cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service /etc/systemd/system
+systemctl enable netperf-dashboard.service
+
 # save the settings to the configuration file:
 python "$CONFIG_APP" --set data_root --value "$data_root"
 python "$CONFIG_APP" --set data_usage_quota_GB --value "$data_usage_quota_GB"

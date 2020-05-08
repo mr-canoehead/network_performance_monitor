@@ -39,7 +39,6 @@ def bwmonitor(interface):
 	last_rx_bytes = None
 	last_tx_bytes = None
 	last_time = None
-
 	dbq = db_queue()
 	while True:
         	loop_start_time = time.time()

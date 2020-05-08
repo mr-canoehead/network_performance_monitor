@@ -276,6 +276,22 @@ do
 	done
 done
 
+###### Check for interfaces in the root network namespace. If there are none, move the test execution interface to it.
+#      This will provide a network interface for services that need a network connection (e.g. the dashboard application).
+
+root_ns_if_name=""
+for s in "${selected[@]}"
+do
+	if [[ "${interface_namespaces[$s]}" == "root" ]]; then
+		root_ns_if_name="$s"
+		break
+	fi
+done
+if [[ "$root_ns_if_name" == "" ]]; then
+	whiptail --title "$TITLE" --msgbox "There are no network interfaces assigned to the root network namespace.\nThe test exectution interface $test_execution_interface will be moved to the root network namespace." 10 80 3>&1 1>&2 2>&3
+	interface_namespaces["$test_execution_interface"]="root"
+fi
+
 ###### wpa_supplicant configuration for wireless interfaces
 
 show_wifi_config_msg=true
@@ -322,8 +338,10 @@ if [[ "$configure_bwmonitor" == true ]]; then
 	echo "		\"bridge_name\" : \"bwmonitor\"," >> $OUTPUT_FILE
 	echo "		\"modem_interface\" : \"$upstream_interface\"," >> $OUTPUT_FILE
 	echo "		\"router_interface\" : \"$downstream_interface\"" >> $OUTPUT_FILE
+	python "$APPLICATION_PATH/netperf_settings.py --set bwmonitor_enabled --value true"
 else
 	echo "		\"configure\" : false" >> $OUTPUT_FILE
+	python "$APPLICATION_PATH/netperf_settings.py --set bwmonitor_enabled --value false" 
 fi
 echo "	}" >> $OUTPUT_FILE
 echo "}" >> $OUTPUT_FILE

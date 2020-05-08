@@ -64,8 +64,16 @@ class netperf_settings:
 		else:
 			return None
 
+	def get_report_path(self):
+		if "data_root" in self.settings_json:
+			client_id = util.get_client_id()
+			report_path = "{}/{}/reports".format(self.settings_json["data_root"].rstrip("/"),client_id)
+			return report_path
+		else:
+			return None
+
 	def get_db_write_queue_name(self):
-		db_write_queue_name = "/netperfdb.write"
+		db_write_queue_name = "/netperf.db"
 		if "db_write_queue" in self.settings_json:
 			db_write_queue_name = str(self.settings_json["db_write_queue"])
 		return db_write_queue_name
@@ -135,6 +143,28 @@ class netperf_settings:
 				log_settings["log_level"] = log_level
 		self.save_settings()
 
+	def get_dashboard_enabled(self):
+		if "dashboard" in self.settings_json:
+			dashboard_enabled = self.settings_json["dashboard"].get("enabled", False)
+		else:
+			dashboard_enabled = False
+		return dashboard_enabled
+
+	def get_dashboard_queue_name(self):
+		if "dashboard" in self.settings_json:
+			queue_name = self.settings_json["dashboard"].get("queue_name", None)
+		else:
+			queue_name = None
+		return queue_name
+
+	def set_dashboard_enabled(self,value):
+		self.settings_json["dashboard"]["enabled"] = value
+		self.save_settings()
+
+	def set_bandwidth_monitor_enabled(self,value):
+		self.settings_json["bandwidth_monitor"]["enabled"] = value
+		self.save_settings()
+
 def main():
 	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
 	ns = netperf_settings()
@@ -171,7 +201,9 @@ def main():
 			else:
 				if setting == "data_root":
 					print ns.get_data_root()
-
+				else:
+					if setting == "report_path":
+						print ns.get_report_path()
 
 	if action == "set":
 		if setting == "data_usage_quota_GB":
@@ -213,5 +245,24 @@ def main():
 							ns.set_log_level(value)
 						else:
 							print("Invalid log level")
+					else:
+						if setting == "dashboard_enabled":
+							if value.lower() == "true":
+								ns.set_dashboard_enabled(True)
+							else:
+								if value.lower() == "false":
+									ns.set_dashboard_enabled(False)
+								else:
+									print ("dashboard_enabled value must be True or False")
+                                                else:
+                                                        if setting == "bwmonitor_enabled":
+                                                                if value.lower() == "true":
+									ns.set_bandwidth_monitor_enabled(True)
+                                                                else:
+                                                                        if value.lower() == "false":
+                                                                                ns.set_bandwidth_monitor_enabled(False)
+                                                                        else:
+                                                                                print ("bwmonitor_enabled value must be True or False")
+
 if __name__ == "__main__":
 	main()
