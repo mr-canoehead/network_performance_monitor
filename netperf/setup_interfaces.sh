@@ -338,10 +338,10 @@ if [[ "$configure_bwmonitor" == true ]]; then
 	echo "		\"bridge_name\" : \"bwmonitor\"," >> $OUTPUT_FILE
 	echo "		\"modem_interface\" : \"$upstream_interface\"," >> $OUTPUT_FILE
 	echo "		\"router_interface\" : \"$downstream_interface\"" >> $OUTPUT_FILE
-	python "$APPLICATION_PATH/netperf_settings.py --set bwmonitor_enabled --value true"
+	python "$APPLICATION_PATH"/netperf_settings.py --set bwmonitor_enabled --value true
 else
 	echo "		\"configure\" : false" >> $OUTPUT_FILE
-	python "$APPLICATION_PATH/netperf_settings.py --set bwmonitor_enabled --value false" 
+	python "$APPLICATION_PATH"/netperf_settings.py --set bwmonitor_enabled --value false 
 fi
 echo "	}" >> $OUTPUT_FILE
 echo "}" >> $OUTPUT_FILE
