@@ -111,14 +111,6 @@ if [[ ! -d "$data_root/log" ]]; then
 	sudo -u pi touch "$data_root/log/netperf.log"
 fi
 
-# create the reports directory if it doesn't exist:
-if [[ ! -d "$data_root/reports" ]]; then
-	sudo -u pi mkdir -p "$data_root/reports"
-fi
-
-# link the reports directory to the dashboard html directory:
-ln -s "$data_root/reports" /opt/netperf/dashboard/html/reports
-
 # copy the dashboard website configuration file
 cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/sites-available
 ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netperf-dashboard
@@ -134,6 +126,15 @@ systemctl enable netperf-dashboard.service
 python "$CONFIG_APP" --set data_root --value "$data_root"
 python "$CONFIG_APP" --set data_usage_quota_GB --value "$data_usage_quota_GB"
 python "$CONFIG_APP" --set enforce_quota --value "$enforce_quota"
+
+# create the reports directory if it doesn't exist:
+report_path=$( "$CONFIG_APP" --get report_path )
+if [[ ! -d "$report_path" ]]; then
+        sudo -u pi mkdir -p "$report_path"
+fi
+
+# link the reports directory to the dashboard html directory:
+ln -s "$report_path" /opt/netperf/dashboard/html/reports
 
 # run the interface setup script:
 source /opt/netperf/setup_interfaces.sh

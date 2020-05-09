@@ -133,7 +133,7 @@ def get_report_list(message = None):
 	for file in os.listdir(reportPath):
 		if file.endswith(".pdf"):
 			reportFileList.append(file)
-	emit('report_files',reportFileList)
+	emit('report_list',reportFileList)
 
 @socketio.on('get_settings', namespace='/dashboard')
 def get_settings(message = None):

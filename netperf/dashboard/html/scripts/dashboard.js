@@ -1025,7 +1025,7 @@ function openInNewTab(url) {
   win.focus();
 }
 
-socket.on('report_files', function(msg){
+socket.on('report_list', function(msg){
 	var reportFilesMessage = document.getElementById("reportFilesMessage");
 	var reportFilesContainer = document.getElementById("reportFiles");
 	if (msg.length > 0){
