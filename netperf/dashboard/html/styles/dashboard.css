@@ -96,8 +96,8 @@ h3 {
 	left: 50%;
 	transform: translate(-50%, -50%);
 	border-radius: 10px;
-	height: 300px;
-	width: 300px;
+	height: 270px;
+	width: 280px;
 	vertical-align: center;
 	align: center;
 	z-index: 10;
@@ -199,6 +199,6 @@ h3 {
 #datePickerInputContainer{
 	position: relative;
 	margin-left: 10px;
-	margin-top:10px;
+	margin-top:20px;
 }
 

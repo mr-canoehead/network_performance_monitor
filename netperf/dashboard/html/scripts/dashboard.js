@@ -56,6 +56,7 @@ function fractional_hour(timestamp){
 }
 
 function clock_ticks(value, index, values) {
+	var ticktext;
 	const clockTicks12hr = ["12am","1am","2am","3am","4am","5am","6am","7am","8am","9am","10am","11am",
 				"12pm","1pm","2pm","3pm","4pm","5pm","6pm","7pm","8pm","9pm","10pm","11pm",
 				"12am"];
@@ -75,8 +76,8 @@ function showBandwidthChart(){
     for (let step = 0; step < 60; step++) {
         ticks.push("");
     }
-        bandwidthChart = netperfData.charts["bandwidth"];
-	chartElement = document.getElementById(bandwidthChart.canvasId);
+        var bandwidthChart = netperfData.charts["bandwidth"];
+	var chartElement = document.getElementById(bandwidthChart.canvasId);
 	chartElement.classList.add("loading");
         bandwidthChart.chartObject = new Chart (chartElement, {
                 type: "line",
@@ -158,7 +159,7 @@ function showBandwidthChart(){
 }
 
 function showSpeedtestChart() {
-	stChart = netperfData.charts["speedtest"];
+	var stChart = netperfData.charts["speedtest"];
 	stChart.chartObject = new Chart(document.getElementById(stChart.canvasId), {
 		type: 'scatter',
 		options: {
@@ -315,7 +316,7 @@ function showSpeedtestChart() {
 }
 
 function showBandwidthDailyChart() {
-	bwDailyChart = netperfData.charts["bandwidthDaily"];
+	var bwDailyChart = netperfData.charts["bandwidthDaily"];
 	bwDailyChart.chartObject = new Chart(document.getElementById(bwDailyChart.canvasId), {
 		type: 'scatter',
 		options: {
@@ -413,7 +414,7 @@ function showBandwidthDailyChart() {
 }
 
 function showDNSChart() {
-	dnsChart = netperfData.charts["dns"];
+	var dnsChart = netperfData.charts["dns"];
 	dnsChart.chartObject = new Chart(document.getElementById(dnsChart.canvasId), {
 		type: 'scatter',
 		options: {
@@ -556,10 +557,11 @@ function showDNSChart() {
 }
 
 socket.on('speedtest_data', function(msg) {
-	rx_Mbps_values = [];
-	tx_Mbps_values = [];
-	latency_values = [];
-	function get_speedtest_stuff(json){
+	var rx_Mbps_values = [];
+	var tx_Mbps_values = [];
+	var latency_values = [];
+	var timestamp;
+	function get_speedtest_info(json){
 		timestamp = json.timestamp;
 		frac_hour = fractional_hour(timestamp);
 		rx_Mbps = json.rx_Mbps;
@@ -569,9 +571,9 @@ socket.on('speedtest_data', function(msg) {
 		tx_Mbps_values.push({x: frac_hour, y: tx_Mbps})
 		latency_values.push({x: frac_hour, y: latency})
 	}
-	msg.forEach(get_speedtest_stuff);
-	speedtestChart = netperfData.charts["speedtest"];
-	chartElement = document.getElementById(speedtestChart.canvasId);
+	msg.forEach(get_speedtest_info);
+	var speedtestChart = netperfData.charts["speedtest"];
+	var chartElement = document.getElementById(speedtestChart.canvasId);
 	chartElement.classList.remove("loading");
 	speedtestChart.lastTimestamp = timestamp;
 	speedtestChart.chartObject.data.datasets[0].data = rx_Mbps_values;
@@ -581,15 +583,15 @@ socket.on('speedtest_data', function(msg) {
 });
 
 socket.on('speedtest', function(msg) {
-	speedtestChart = netperfData.charts["speedtest"];
+	var speedtestChart = netperfData.charts["speedtest"];
 	if (speedtestChart.chartObject != null){
 		if (netperfData.viewDate != "today"){
 			return
 		}
-		frac_hour = fractional_hour(msg.timestamp);
-		rx_Mbps_point={x: frac_hour, y: msg.rx_Mbps};
-		tx_Mbps_point={x: frac_hour, y: msg.tx_Mbps};
-		latency_point={x: frac_hour, y: msg.ping};
+		var frac_hour = fractional_hour(msg.timestamp);
+		var rx_Mbps_point={x: frac_hour, y: msg.rx_Mbps};
+		var tx_Mbps_point={x: frac_hour, y: msg.tx_Mbps};
+		var latency_point={x: frac_hour, y: msg.ping};
 		if (!sameDay(msg.timestamp, speedtestChart.lastTimestamp)){
 			speedtestChart.chartObject.data.datasets[0].data = [];
 			speedtestChart.chartObject.data.datasets[1].data = [];
@@ -605,20 +607,21 @@ socket.on('speedtest', function(msg) {
 });
 
 socket.on('isp_outage_data', function(msg) {
-	outage_points = [];
-	function get_outage_stuff(json){
+	var outage_points = [];
+	var timestamp,frac_hour;
+	function get_outage_info(json){
 		timestamp = json.timestamp;
 		frac_hour = fractional_hour(timestamp);
 		outage_points.push({x: frac_hour, y: 0.5});
 	}
-	msg.forEach(get_outage_stuff);
-	speedtestChart = netperfData.charts["speedtest"];
+	msg.forEach(get_outage_info);
+	var speedtestChart = netperfData.charts["speedtest"];
 	speedtestChart.chartObject.data.datasets[3].data = outage_points;
         speedtestChart.chartObject.update()
 });
 
 socket.on('isp_outage', function(msg) {
-	speedtestChart = netperfData.charts["speedtest"];
+	var speedtestChart = netperfData.charts["speedtest"];
 	if (speedtestChart.chartObject != null){
 		if (netperfData.viewDate != "today"){
 			return;
@@ -629,7 +632,7 @@ socket.on('isp_outage', function(msg) {
 			speedtestChart.chartObject.data.datasets[2].data = [];
 			speedtestChart.chartObject.data.datasets[3].data = [];
 		}
-		frac_hour = fractional_hour(msg.timestamp);
+		var frac_hour = fractional_hour(msg.timestamp);
 		speedtestChart.lastTimestamp = msg.timestamp;
 		speedtestChart.chartObject.data.datasets[3].data.push({x: frac_hour, y: 0.5});
 		speedtestChart.chartObject.update();
@@ -637,14 +640,14 @@ socket.on('isp_outage', function(msg) {
 });
 
 function createIperf3Chart(interfaceName){
-	subsection = document.createElement("div");
+	var subsection = document.createElement("div");
 	subsection.setAttribute("id",interfaceName);
-	canvasId = interfaceName + 'Chart'
+	var canvasId = interfaceName + 'Chart'
 	canvasElement = document.createElement("canvas");
 	canvasElement.setAttribute("id", canvasId);
 	canvasElement.setAttribute("width",400);
 	canvasElement.setAttribute("height",200);
-	iperf3_data = document.getElementById('iperf3');
+	var iperf3_data = document.getElementById('iperf3');
 	subsection.append(canvasElement);
 	iperf3_data.append(subsection);
 	netperfData.charts.push(interfaceName);
@@ -778,6 +781,7 @@ function createIperf3Chart(interfaceName){
 
 socket.on('iperf3_data', function(msg) {
 	var interface_data = [];
+	var chart;
 	netperfData.charts.forEach(function(chartName){
 		chart = netperfData.charts[chartName];
 		if (chart.type == 'iperf3'){
@@ -787,6 +791,7 @@ socket.on('iperf3_data', function(msg) {
 		}
 	});
 	var iperf3DataAvailable = false;
+	var rx_Mbps,tx_Mbps,retransmits,frac_hour,remote_host;
 	msg.forEach(function(row) {
 		iperf3DataAvailable = true;
 		rx_Mbps = row.rx_Mbps;
@@ -808,7 +813,7 @@ socket.on('iperf3_data', function(msg) {
 		}
 	});
 	if (iperf3DataAvailable == true){
-		iperf3DataMessage = document.getElementById("iperf3DataMessage")
+		var iperf3DataMessage = document.getElementById("iperf3DataMessage")
 		if (iperf3DataMessage != null){
 			iperf3DataMessage.parentNode.removeChild(iperf3DataMessage);
 		}
@@ -852,15 +857,16 @@ socket.on('dns_data', function(msg) {
 	var external_query_times = [];
 	var internal_query_failures = [];
 	var external_query_failures = [];
-	function get_dns_stuff(json){
-		var timestamp = json.timestamp;
-		var frac_hour = fractional_hour(timestamp);
+	var timestamp, frac_hour;
+	function get_dns_info(json){
+		timestamp = json.timestamp;
+		frac_hour = fractional_hour(timestamp);
 		internal_query_times.push({x: frac_hour, y: json.internal_dns_query_time})
 		internal_query_failures.push({x: frac_hour, y: json.internal_dns_failures})
 		external_query_times.push({x: frac_hour, y: json.external_dns_query_time})
 		external_query_failures.push({x: frac_hour, y: json.external_dns_failures})
 	}
-	msg.forEach(get_dns_stuff);
+	msg.forEach(get_dns_info);
 	var dnsChart = netperfData.charts["dns"];
 	var chartElement = document.getElementById(dnsChart.canvasId);
 	chartElement.classList.remove("loading");
@@ -907,7 +913,7 @@ socket.on('bandwidth_data', function(msg) {
 		tx_Mbps_values.push(json.tx_bps/1e6);
 	}
 	msg.forEach(get_rx_tx_vals);
-	chartElement = document.getElementById(netperfData.charts["bandwidth"].canvasId);
+	var chartElement = document.getElementById(netperfData.charts["bandwidth"].canvasId);
 	chartElement.classList.remove("loading");
 	netperfData.charts["bandwidth"].chartObject.data.datasets[0].data = rx_Mbps_values.reverse();
 	netperfData.charts["bandwidth"].chartObject.data.datasets[1].data = tx_Mbps_values.reverse();
@@ -971,29 +977,29 @@ class timeBins {
 }
 
 socket.on('bandwidth_usage', function(msg) {
-		rxTimeBins = new timeBins(10);
-		txTimeBins = new timeBins(10);
-                rx_Mbps_values = [];
-                tx_Mbps_values = [];
+		var rxTimeBins = new timeBins(10);
+		var txTimeBins = new timeBins(10);
+                var rx_Mbps_values = [];
+                var tx_Mbps_values = [];
                 function fillTimeBins(json){
-			frac_hour = fractional_hour(json.timestamp);
+			var frac_hour = fractional_hour(json.timestamp);
 			rxTimeBins.addValue(frac_hour,json.rx_bps/1e6);
 			txTimeBins.addValue(frac_hour,json.tx_bps/1e6);
                 }
                 msg.forEach(fillTimeBins);
-		rxMeans = rxTimeBins.getMeans();
-		txMeans = txTimeBins.getMeans();
-		rxTimes = rxTimeBins.getTimes();
-		txTimes = txTimeBins.getTimes();
-		rxChartPoints=[];
+		var rxMeans = rxTimeBins.getMeans();
+		var txMeans = txTimeBins.getMeans();
+		var rxTimes = rxTimeBins.getTimes();
+		var txTimes = txTimeBins.getTimes();
+		var rxChartPoints=[];
 		for (var t in rxTimes) {
 			rxChartPoints.push({x: rxTimes[t], y: rxMeans[t]});
 		}
-		txChartPoints=[];
+		var txChartPoints=[];
 		for (var t in txTimes) {
 			txChartPoints.push({x: txTimes[t], y: txMeans[t]});
 		}
-		chartElement = document.getElementById(netperfData.charts["bandwidthDaily"].canvasId);
+		var chartElement = document.getElementById(netperfData.charts["bandwidthDaily"].canvasId);
 		chartElement.classList.remove("loading");
                 netperfData.charts["bandwidthDaily"].chartObject.data.datasets[0].data = rxChartPoints;
                 netperfData.charts["bandwidthDaily"].chartObject.data.datasets[1].data = txChartPoints;
@@ -1002,9 +1008,9 @@ socket.on('bandwidth_usage', function(msg) {
 
 
 socket.on('bandwidth', function(msg, cb) {
-	rx_Mbps = msg.rx_bps/1e6;
-	tx_Mbps = msg.tx_bps/1e6;
-	bandwidthChart = netperfData.charts["bandwidth"];
+	var rx_Mbps = msg.rx_bps/1e6;
+	var tx_Mbps = msg.tx_bps/1e6;
+	var bandwidthChart = netperfData.charts["bandwidth"];
 	if (bandwidthChart.chartObject != null){
 		if (bandwidthChart.chartObject.data.datasets[0].data.length >= 60){
 			bandwidthChart.chartObject.data.datasets[0].data.shift();
@@ -1067,7 +1073,7 @@ socket.on('settings', function(msg){
                 socket.emit('get_bandwidth_data',{rows: 60});
 	}
 	else{
-		menuItem = document.getElementById("bwmonitorMenuItem");
+		var menuItem = document.getElementById("bwmonitorMenuItem");
 		menuItem.style.display = "none";
 	}
         socket.emit('get_speedtest_data');
@@ -1147,8 +1153,8 @@ function sameCalendarDay(date1, date2) {
 }
 
 function clearChart(chartName){
-        chart = netperfData.charts[chartName];
-        chartElement = document.getElementById(chart.canvasId);
+        var chart = netperfData.charts[chartName];
+        var chartElement = document.getElementById(chart.canvasId);
         chartElement.classList.add("loading");
         for (i in chart.chartObject.data.datasets){
                 chart.chartObject.data.datasets[i].data = [];

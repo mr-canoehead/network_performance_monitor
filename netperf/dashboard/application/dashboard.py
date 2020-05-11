@@ -27,7 +27,7 @@ async_mode = "eventlet"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dashboard'
-socketio = SocketIO(app, async_mode=async_mode)
+socketio = SocketIO(app, async_handlers=True, async_mode=async_mode)
 thread = None
 thread_lock = Lock()
 
