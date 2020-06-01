@@ -165,6 +165,17 @@ class netperf_settings:
 		self.settings_json["bandwidth_monitor"]["enabled"] = value
 		self.save_settings()
 
+	def set_speedtest_client(self, value):
+		self.settings_json["speedtest"]["client"] = value
+		self.save_settings()
+
+	def get_speedtest_client(self):
+		if "speedtest" in self.settings_json:
+			speedtest_client = self.settings_json["speedtest"].get("client", None)
+		else:
+			speedtest_client = None
+		return speedtest_client
+
 def main():
 	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
 	ns = netperf_settings()
@@ -263,6 +274,15 @@ def main():
                                                                                 ns.set_bandwidth_monitor_enabled(False)
                                                                         else:
                                                                                 print ("bwmonitor_enabled value must be True or False")
+							else:
+								if setting == "speedtest_client":
+									if value.lower() == "ookla":
+										ns.set_speedtest_client("ookla")
+									else:
+										if value.lower() == "speedtest-cli":
+											ns.set_speedtest_client("speedtest-cli")
+										else:
+											print ("speedtest_client value must be 'speedtest-cli' or 'ookla'")
 
 if __name__ == "__main__":
 	main()

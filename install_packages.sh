@@ -3,7 +3,7 @@
 # See the file LICENSE for full license details.
 
 apt_packages=( sqlite3 bridge-utils python-posix-ipc python-daemon python-numpy python-matplotlib iperf3 \
-               speedtest-cli dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
+               dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
                git bc nginx gunicorn python-pip)
 
 declare -A pip_packages
@@ -11,8 +11,39 @@ pip_packages[Flask]=flask
 pip_packages[flask-socketio]=flask_socketio
 pip_packages[eventlet]=eventlet
 
+result=$( whiptail --title "Speedtest client selection" --menu --nocancel \
+"The system performs periodic Internet speed tests against Ookla speedtest.net servers. \
+There are two speedtest clients available for performing these tests:\n\n\
+speedtest-cli: an open source speedtest client that may report inaccurate speeds on faster Internet connections\n\n\
+Ookla Speedtest CLI: a closed source proprietary client that reports accurate speeds on faster Internet connections\n\n\
+Which client do you want to install?\n\n
+" 20 80 2 \
+"speedtest-cli" " open source client" \
+"Ookla Speedtest CLI" " closed source proprietary client" 3>&1 1>&2 2>&3 )
+
+if [[ "$result" == "speedtest-cli" ]]; then
+	# uninstall Ookla client, add speedtest-cli to the package list
+	dpkg -s speedtest
+	if [[ "$?" -eq 0 ]]; then
+		sudo apt remove -y speedtest
+	fi
+	apt_packages+=( speedtest-cli )
+else
+	# uninstall speedtest-cli, add Ookla client + dependencies to the package list
+	dpkg -s speedtest-cli
+	if [[ "$?" -eq 0 ]]; then
+		sudo apt remove -y speedtest-cli
+	fi
+	INSTALL_KEY=379CE192D401AB61
+	DEB_DISTRO=$(lsb_release -sc)
+	sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$INSTALL_KEY"
+	echo "deb https://ookla.bintray.com/debian ${DEB_DISTRO} main" | sudo tee  /etc/apt/sources.list.d/speedtest.list > /dev/null
+	apt_packages+=( gnupg1 apt-transport-https dirmngr speedtest)
+fi
+
 all_packages_installed=true
 echo "Installing required packages..."
+sudo apt update
 for apt_package in "${apt_packages[@]}"
 do
 	# test if package is already installed

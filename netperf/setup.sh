@@ -136,5 +136,20 @@ fi
 # link the reports directory to the dashboard html directory:
 ln -s "$report_path" /opt/netperf/dashboard/html/reports
 
+# detect which speedtest client is installed:
+dpkg -s speedtest-cli > /dev/null 2>&1
+if [[ "$?" -eq 0 ]]; then
+	speedtest_client="speedtest-cli"
+else
+	dpkg -s speedtest > /dev/null 2>&1
+	if [[ "$?" -eq 0 ]]; then
+		speedtest_client="ookla"
+	else
+		echo "Error: a speedtest client is not installed. Please run the package installer script."
+		exit 1
+	fi
+fi
+python "$CONFIG_APP" --set speedtest_client --value "$speedtest_client"
+
 # run the interface setup script:
 source /opt/netperf/setup_interfaces.sh

@@ -129,25 +129,45 @@ def test_local_network(test_exec_namespace, remote_host, dbq):
 	dbq.write(db_data)
 
 def test_isp(test_exec_namespace,dbq):
+	speedtest_client = NETPERF_SETTINGS.get_speedtest_client()
 	test_log.info("Testing Internet speed...")
 	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
 		cmd_prefix = ""
-	cmd = "{}speedtest-cli --json".format(cmd_prefix)
+	if speedtest_client == "speedtest-cli":
+		# open source client
+		cmd = "{}speedtest-cli --json".format(cmd_prefix)
+	else:
+		# Ookla client
+		cmd = "{}speedtest --accept-license --format=json".format(cmd_prefix)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
 		test_log.info("Successful speedtest.")
 		# successful speedtest
 		speedtest_json=json.loads(json_str)
-		rx_Mbps=round(float(speedtest_json['download'])/1e6,2)
-		tx_Mbps=round(float(speedtest_json['upload'])/1e6,2)
-		rx_bytes=speedtest_json['bytes_received']
-		tx_bytes=speedtest_json['bytes_sent']
-		ping = round(speedtest_json['ping'],2)
-		remote_host=speedtest_json['server']['host']
-		url=speedtest_json['server']['url']
+		if speedtest_client == "speedtest-cli":
+			# open source client JSON format
+			rx_Mbps=round(float(speedtest_json['download'])/1e6,2)
+			tx_Mbps=round(float(speedtest_json['upload'])/1e6,2)
+			rx_bytes=speedtest_json['bytes_received']
+			tx_bytes=speedtest_json['bytes_sent']
+			ping = round(speedtest_json['ping'],2)
+			remote_host=speedtest_json['server']['host']
+			url=speedtest_json['server']['url']
+		else:
+			# Ookla client JSON format
+			rx_bytes=speedtest_json['download']['bytes']
+			rx_elapsed_seconds = float(speedtest_json['download']['elapsed'])/1e3
+			rx_Mbps = round(float(rx_bytes) * 8.0  / rx_elapsed_seconds / 1e6,2)
+			tx_bytes=speedtest_json['upload']['bytes']
+			tx_elapsed_seconds = float(speedtest_json['upload']['elapsed'])/1e3
+			tx_Mbps = round(float(tx_bytes) * 8.0  / tx_elapsed_seconds / 1e6,2)
+			ping = round(speedtest_json['ping']['latency'],2)
+			remote_host=speedtest_json['server']['host']
+			url='n/a'
+
 		speedtest_results=(client_id,time.time(),rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
 		test_status = True
 	else:
