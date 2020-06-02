@@ -239,7 +239,6 @@ function showSpeedtestChart() {
 					{
  						ticks: {
 							beginAtZero: true,
-							stepSize: 1,
 						},
 						scaleLabel: {
 							display: true,

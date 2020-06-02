@@ -140,7 +140,7 @@ def test_isp(test_exec_namespace,dbq):
 		cmd = "{}speedtest-cli --json".format(cmd_prefix)
 	else:
 		# Ookla client
-		cmd = "{}speedtest --accept-license --format=json".format(cmd_prefix)
+		cmd = "{}speedtest --format=json".format(cmd_prefix)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
