@@ -113,7 +113,7 @@ else
         dpkg -s speedtest
         if [[ "$?" -eq 0 ]]; then
                 whiptail --title "Ookla license agreement" --msgbox "The system will now run the Speedtest CLI application so that you can accept the Ookla license agreement." 10 80 3>&1 1>&2 2>&3
-                speedtest
+                sudo -u pi speedtest
         fi
 	echo
 	echo "All required packages were installed successfully."
