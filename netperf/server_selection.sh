@@ -8,11 +8,12 @@
 # Note that the open source speedtest-cli is currently broken with regards to targeting a specific server; if the
 # open source client is installed, this script will default to the automatic server selection setting.
 
+TITLE="Network Performance Monitor Configuration"
 INPUT_FIELD_SEPARATOR="\|\|"
 
 speedtestClient=$( /opt/netperf/netperf_settings.py --get speedtest_client )
 if [[ "$speedtestClient" == "ookla" ]]; then
-	serverSelectionMethod=$( whiptail --title "test" --menu "Internet speed test server selection method:" 0 0 2 \
+	serverSelectionMethod=$( whiptail --title "$TITLE" --menu "Internet speed test server selection method:" 0 0 2 \
 		Automatic: "let the speedtest client choose servers automatically" \
 		Manual: "choose a specific server for performing speed tests" \
 		3>&1 1>&2 2>&3 )
@@ -24,9 +25,9 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 		until [[ "$serverAccepted" == true ]] || [[ "$cancel" == true ]]
 		do
 			printf "\nRequesting speed test server list...\n"
-			serverList=$( python get_speedtest_servers.py )
+			serverList=$( /usr/bin/python /opt/netperf/get_speedtest_servers.py )
 			if [[ "$?" -ne 0 ]]; then
-				whiptail --title "test" --yesno "Unable to retrieve speed test server list.\nTry again?" 0 0
+				whiptail --title "$TITLE" --yesno "Unable to retrieve speed test server list.\nTry again?" 0 0
 					if [[ "$?" -eq 0 ]]; then
 					continue
 				else
@@ -35,6 +36,7 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 				fi
 			fi
 			menuItems=()
+			OLDIFS=$IFS
 			IFS=$'\n'
 			declare -A serverDetails
 			while read line
@@ -44,12 +46,13 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 				menuItems+=("$id" "$details")
 				serverDetails["$id"]="$details"
 			done <<< $serverList
-			serverId=$( whiptail --title "test" --menu "Choose an Internet speed test server:" 18 100 10 "${menuItems[@]}" 3>&1 1>&2 2>&3 )
+			IFS=$OLDIFS
+			serverId=$( whiptail --title "$TITLE" --menu "Choose an Internet speed test server:" 18 100 10 "${menuItems[@]}" 3>&1 1>&2 2>&3 )
 			if [[ "$?" -ne 0 ]]; then
 				cancel=true
 				continue
 			fi
-			whiptail --title "test" --yesno "The following server will be used for all Internet speed tests:\n\n$serverId ${serverDetails[$serverId]}\n\nContinue with this selection?" 0 0
+			whiptail --title "$TITLE" --yesno "The following server will be used for all Internet speed tests:\n\n$serverId ${serverDetails[$serverId]}\n\nContinue with this selection?" 0 0
 			if [[ "$?" -eq 0 ]]; then
 				serverAccepted=true
 			else
@@ -57,10 +60,10 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 			fi
 		done
 		if [[ "$serverId" == "None" ]]; then
-			whiptail --title "test" --msgbox "Manual server selection failed.\nThe speed test server will be chosen automatically." 0 0
+			whiptail --title "$TITLE" --msgbox "Manual server selection failed.\nThe speed test server will be chosen automatically." 0 0
 		fi
 	else
-		whiptail --title "test" --msgbox "The speedtest client will choose a server automatically." 0 0
+		whiptail --title "$TITLE" --msgbox "The speedtest client will choose a server automatically." 0 0
 	fi
 else
 	# speedtest-cli is being used, default to automatic server selection
