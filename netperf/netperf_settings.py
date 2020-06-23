@@ -176,6 +176,22 @@ class netperf_settings:
 			speedtest_client = None
 		return speedtest_client
 
+	def set_speedtest_server_id(self,server_id):
+		if "speedtest" in self.settings_json:
+			speedtest_settings = self.settings_json["speedtest"]
+			if server_id == "None":
+				speedtest_settings["server_id"] = None
+			else:
+				speedtest_settings["server_id"] = server_id
+		self.save_settings()
+
+	def get_speedtest_server_id(self):
+		if "speedtest" in self.settings_json:
+			server_id = self.settings_json["speedtest"].get("server_id", None)
+		else:
+			server_id = None
+		return server_id
+
 def main():
 	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
 	ns = netperf_settings()
@@ -215,6 +231,12 @@ def main():
 				else:
 					if setting == "report_path":
 						print ns.get_report_path()
+					else:
+						if setting == "speedtest_server_id":
+							print ns.get_speedtest_server_id()
+						else:
+							if setting == "speedtest_client":
+								print ns.get_speedtest_client()
 
 	if action == "set":
 		if setting == "data_usage_quota_GB":
@@ -283,6 +305,11 @@ def main():
 											ns.set_speedtest_client("speedtest-cli")
 										else:
 											print ("speedtest_client value must be 'speedtest-cli' or 'ookla'")
-
+								else:
+									if setting == "speedtest_server_id":
+										if value != "":
+											ns.set_speedtest_server_id(value)
+										else:
+											print ("speedtest_server_id setting requires a value")
 if __name__ == "__main__":
 	main()

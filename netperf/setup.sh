@@ -189,5 +189,8 @@ else
 fi
 python "$CONFIG_APP" --set speedtest_client --value "$speedtest_client"
 
+# run the speed test server selection script
+source /opt/netperf/server_selection.sh
+
 # run the interface setup script:
 source /opt/netperf/setup_interfaces.sh

@@ -10,6 +10,7 @@ declare -A pip_packages
 pip_packages[Flask]=flask
 pip_packages[flask-socketio]=flask_socketio
 pip_packages[eventlet]=eventlet
+pip_packages[requests]=requests
 
 result=$( whiptail --title "Speedtest client selection" --menu --nocancel \
 "The system performs periodic Internet speed tests against Ookla speedtest.net servers. \

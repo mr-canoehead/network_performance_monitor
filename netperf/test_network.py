@@ -130,6 +130,7 @@ def test_local_network(test_exec_namespace, remote_host, dbq):
 
 def test_isp(test_exec_namespace,dbq):
 	speedtest_client = NETPERF_SETTINGS.get_speedtest_client()
+	speedtest_server_id = NETPERF_SETTINGS.get_speedtest_server_id()
 	test_log.info("Testing Internet speed...")
 	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
@@ -137,10 +138,19 @@ def test_isp(test_exec_namespace,dbq):
 		cmd_prefix = ""
 	if speedtest_client == "speedtest-cli":
 		# open source client
-		cmd = "{}speedtest-cli --json".format(cmd_prefix)
+		if speedtest_server_id is not None:
+			speedtest_server_opt = "--server {}".format(speedtest_server_id)
+		else:
+			speedtest_server_opt = ""
+		cmd = "{}speedtest-cli --json {}".format(cmd_prefix,speedtest_server_opt)
 	else:
 		# Ookla client
-		cmd = "{}speedtest --format=json".format(cmd_prefix)
+		if speedtest_server_id is not None:
+			speedtest_server_opt = "--server-id={}".format(speedtest_server_id)
+		else:
+			speedtest_server_opt = ""
+		cmd = "{}speedtest --format=json {}".format(cmd_prefix,speedtest_server_opt)
+	print cmd
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
