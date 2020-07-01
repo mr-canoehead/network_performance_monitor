@@ -5,16 +5,30 @@
 import requests
 from xml.dom.minidom import parse, parseString
 import sys
+import platform
 
-SERVERLIST_URL="https://www.speedtest.net/speedtest-servers.php"
+SERVERLIST_URL="https://www.speedtest.net/speedtest-servers-static.php"
 OUTPUT_FIELD_SEPARATOR="||"
 
+ua_info = (
+        'Mozilla/5.0',
+        '(%s; U; %s; en-us)' % (platform.system(), platform.architecture()[0]),
+        'Python/%s' % platform.python_version(),
+        '(KHTML, like Gecko)',
+        'netperf/1.0'
+)
+
+USER_AGENT = ' '.join(ua_info)
+
+headers = {
+    'User-Agent': USER_AGENT
+}
+
 try:
-	response = requests.get(SERVERLIST_URL)
+	response = requests.get(SERVERLIST_URL, headers=headers)
 except requests.exceptions.RequestException as e:
 	print "Failed to retrieve server list."
 	sys.exit(1)
-
 try:
 	dom = parseString(response.content)
 except:

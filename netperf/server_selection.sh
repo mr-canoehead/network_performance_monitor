@@ -50,6 +50,7 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 			serverId=$( whiptail --title "$TITLE" --menu "Choose an Internet speed test server:" 18 100 10 "${menuItems[@]}" 3>&1 1>&2 2>&3 )
 			if [[ "$?" -ne 0 ]]; then
 				cancel=true
+				serverId="None"
 				continue
 			fi
 			whiptail --title "$TITLE" --yesno "The following server will be used for all Internet speed tests:\n\n$serverId ${serverDetails[$serverId]}\n\nContinue with this selection?" 0 0
@@ -72,7 +73,6 @@ fi
 
 if [[ "$cancel" == true ]]; then
 	echo "Speed test server selection canceled."
-	exit 1
 fi
 
 sudo /opt/netperf/netperf_settings.py --set speedtest_server_id --value "$serverId"
