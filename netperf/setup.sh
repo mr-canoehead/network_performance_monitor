@@ -12,9 +12,9 @@ CONFIG_APP="/opt/netperf/netperf_settings.py"
 
 # check that the script is being run as root
 if [[ $EUID -ne 0 ]]; then
-        echo "This script must be run as root, e.g:"
-        echo "sudo ./$(basename $0)"
-        exit 1
+	echo "This script must be run as root, e.g:"
+	echo "sudo ./$(basename $0)"
+	exit 1
 fi
 
 # check that Predictable Network Interface Names is enabled
@@ -115,32 +115,32 @@ fi
 # web server port configuration
 port_accepted=false
 until [[ "$port_accepted" == true ]]; do
-        result=$( whiptail --title "Network Performance Monitor Configuration" --menu "The dashboard web page is served by NGINX using port 80 by default.\nIf you are running other HTTP services on this computer you may wish to configure NGINX with a different port.\n\nChoose a port for the NGINX web server:" --nocancel 15 71 3 \
-                "Standard:" "80" \
-                "Alternate:" "8080" \
-                "Custom:" "user specified" 3>&1 1>&2 2>&3)
-        if [[ "$result" == *"Standard"* ]]; then
-                port=80
-        else
-                if [[ "$result" == *"Alternate"* ]]; then
-                        port=8080
-                else
-                        valid_port=false
-                        prompt="Enter a valid port number:"
-                        until [[ "$valid_port" == true ]]; do
-                                port=$(whiptail --inputbox "$prompt" 0 0 8080 --title "Web server port" --nocancel 3>&1 1>&2 2>&3)
-                                if [[ "$port" =~ ^[0-9]+$ ]]; then
-                                        valid_port=true
-                                else
-                                        prompt="Invalid integer. Please enter a valid port number:"
-                                fi
-                        done
-                fi
-        fi
-        whiptail --title "Web server port" --yesno --yes-button "Ok" --no-button "Back" "NGINX will be configured to use port $port" 0 0 
-        if [[ "$?" -eq 0 ]]; then
-                port_accepted=true
-        fi
+		result=$( whiptail --title "Network Performance Monitor Configuration" --menu "The dashboard web page is served by NGINX using port 80 by default.\nIf you are running other HTTP services on this computer you may wish to configure NGINX with a different port.\n\nChoose a port for the NGINX web server:" --nocancel 15 71 3 \
+				"Standard:" "80" \
+				"Alternate:" "8080" \
+				"Custom:" "user specified" 3>&1 1>&2 2>&3)
+		if [[ "$result" == *"Standard"* ]]; then
+				port=80
+		else
+				if [[ "$result" == *"Alternate"* ]]; then
+						port=8080
+				else
+						valid_port=false
+						prompt="Enter a valid port number:"
+						until [[ "$valid_port" == true ]]; do
+								port=$(whiptail --inputbox "$prompt" 0 0 8080 --title "Web server port" --nocancel 3>&1 1>&2 2>&3)
+								if [[ "$port" =~ ^[0-9]+$ ]]; then
+										valid_port=true
+								else
+										prompt="Invalid integer. Please enter a valid port number:"
+								fi
+						done
+				fi
+		fi
+		whiptail --title "Web server port" --yesno --yes-button "Ok" --no-button "Back" "NGINX will be configured to use port $port" 0 0 
+		if [[ "$?" -eq 0 ]]; then
+				port_accepted=true
+		fi
 done
 
 # copy the dashboard website configuration file
@@ -151,9 +151,9 @@ ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netp
 unlink /etc/nginx/sites-enabled/default
 
 if [[ "$port" != "80" ]]; then
-        # edit nginx site configuration file to change port
-        sedcmd="s/listen 80 default_server/listen $port default_server/g;s/listen \[::\]:80 default_server/listen \[::\]:$port default_server/g"
-        sed -i "$sedcmd" /etc/nginx/sites-available/netperf-dashboard
+		# edit nginx site configuration file to change port
+		sedcmd="s/listen 80 default_server/listen $port default_server/g;s/listen \[::\]:80 default_server/listen \[::\]:$port default_server/g"
+		sed -i "$sedcmd" /etc/nginx/sites-available/netperf-dashboard
 fi
 
 # copy the dashboard systemd unit file and enable the service
@@ -168,7 +168,7 @@ python "$CONFIG_APP" --set enforce_quota --value "$enforce_quota"
 # create the reports directory if it doesn't exist:
 report_path=$( "$CONFIG_APP" --get report_path )
 if [[ ! -d "$report_path" ]]; then
-        sudo -u pi mkdir -p "$report_path"
+	sudo -u pi mkdir -p "$report_path"
 fi
 
 # link the reports directory to the dashboard html directory:

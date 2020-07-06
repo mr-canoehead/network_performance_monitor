@@ -45,11 +45,11 @@ def start_end_timestamps(query_date):
 	return (start_timestamp,end_timestamp)
 
 def create_table(db_conn, create_table_sql):
-        try:
-                c = db_conn.cursor()
-                c.execute(create_table_sql)
-        except Error as e:
-                print(e)
+	try:
+		c = db_conn.cursor()
+		c.execute(create_table_sql)
+	except Error as e:
+		print(e)
 
 class netperf_db:
 	def __init__(self,db_file):
@@ -60,75 +60,75 @@ class netperf_db:
 			print(e)
 
 		sql_create_isp_outage_table = """ CREATE TABLE IF NOT EXISTS isp_outages (
-                                        client_id text NOT NULL,
-                                        epoch_time real NOT NULL,
-                                        PRIMARY KEY (client_id,epoch_time)
-                                    ); """
+										client_id text NOT NULL,
+										epoch_time real NOT NULL,
+										PRIMARY KEY (client_id,epoch_time)
+										); """
 
 		sql_create_speedtest_table = """ CREATE TABLE IF NOT EXISTS speedtest (
-                                        client_id text NOT NULL,
-                                        epoch_time real NOT NULL,
-                                        rx_Mbps real NOT NULL,
-                                        tx_Mbps real NOT NULL,
-					rx_bytes integer NOT NULL,
-					tx_bytes integer NOT NULL,
-                                        remote_host text NOT NULL,
-                                        url text NOT NULL,
-                                        ping real,
-                                        PRIMARY KEY (client_id,epoch_time)
-                                    ); """
+										client_id text NOT NULL,
+										epoch_time real NOT NULL,
+										rx_Mbps real NOT NULL,
+										tx_Mbps real NOT NULL,
+										rx_bytes integer NOT NULL,
+										tx_bytes integer NOT NULL,
+										remote_host text NOT NULL,
+										url text NOT NULL,
+										ping real,
+										PRIMARY KEY (client_id,epoch_time)
+										); """
 
 		sql_create_iperf3_table = """CREATE TABLE IF NOT EXISTS iperf3 (
-                                        client_id text NOT NULL,
-                                        epoch_time real NOT NULL,
-                                        remote_host text NOT NULL,
-                                        rx_Mbps real NOT NULL,
-                                        tx_Mbps real NOT NULL,
-                                        retransmits integer,
-                                        PRIMARY KEY (client_id,epoch_time)
-                                );"""
+										client_id text NOT NULL,
+										epoch_time real NOT NULL,
+										remote_host text NOT NULL,
+										rx_Mbps real NOT NULL,
+										tx_Mbps real NOT NULL,
+										retransmits integer,
+										PRIMARY KEY (client_id,epoch_time)
+										);"""
 
 		sql_create_ping_table = """CREATE TABLE IF NOT EXISTS ping (
-                                client_id text NOT NULL,
-                                epoch_time real NOT NULL,
-                                remote_host text NOT NULL,
-                                min real NOT NULL,
-                                avg real NOT NULL,
-                                max real NOT NULL,
-                                mdev real NOT NULL,
-                                PRIMARY KEY (client_id,epoch_time)
-                                );"""
+									client_id text NOT NULL,
+									epoch_time real NOT NULL,
+									remote_host text NOT NULL,
+									min real NOT NULL,
+									avg real NOT NULL,
+									max real NOT NULL,
+									mdev real NOT NULL,
+									PRIMARY KEY (client_id,epoch_time)
+									);"""
 
 
 		sql_create_dns_table = """CREATE TABLE IF NOT EXISTS dns (
-                                client_id text NOT NULL,
-                                epoch_time real NOT NULL,
-				internal_dns_ok integer NOT NULL,
-				internal_dns_query_time integer NOT NULL,
-				internal_dns_failures integer NOT NULL,
-				external_dns_ok integer NOT NULL,
-				external_dns_query_time integer NOT NULL,
-				external_dns_failures integer NOT NULL,
-                                PRIMARY KEY (client_id,epoch_time)
-                                );"""
+									client_id text NOT NULL,
+									epoch_time real NOT NULL,
+									internal_dns_ok integer NOT NULL,
+									internal_dns_query_time integer NOT NULL,
+									internal_dns_failures integer NOT NULL,
+									external_dns_ok integer NOT NULL,
+									external_dns_query_time integer NOT NULL,
+									external_dns_failures integer NOT NULL,
+									PRIMARY KEY (client_id,epoch_time)
+									);"""
 
 
 		sql_create_bandwidth_table = """CREATE TABLE IF NOT EXISTS bandwidth (
-				client_id text NOT NULL,
-				epoch_time real NOT NULL,
-				rx_bytes integer NOT NULL,
-				tx_bytes integer NOT NULL,
-				rx_bps real NOT NULL,
-				tx_bps real NOT NULL,
-				PRIMARY KEY (client_id,epoch_time)
-				);"""
+										client_id text NOT NULL,
+										epoch_time real NOT NULL,
+										rx_bytes integer NOT NULL,
+										tx_bytes integer NOT NULL,
+										rx_bps real NOT NULL,
+										tx_bps real NOT NULL,
+										PRIMARY KEY (client_id,epoch_time)
+										);"""
 
 		sql_create_data_usage_table = """ CREATE TABLE IF NOT EXISTS data_usage (
-                                        client_id text NOT NULL,
-                                        epoch_time real NOT NULL,
-					rxtx_bytes integer NOT NULL,
-                                        PRIMARY KEY (client_id,epoch_time)
-                                    ); """
+										client_id text NOT NULL,
+										epoch_time real NOT NULL,
+										rxtx_bytes integer NOT NULL,
+										PRIMARY KEY (client_id,epoch_time)
+										); """
 
 		if self.db_conn is not None:
 			create_table(self.db_conn, sql_create_isp_outage_table)
@@ -163,7 +163,7 @@ class netperf_db:
 		return cur.lastrowid
 
 	def log_ping(self,data):
-		row_data = ( 	data["client_id"], \
+		row_data = (	data["client_id"], \
 				data["timestamp"], \
 				data["remote_host"], \
 				data["min"], \
@@ -181,11 +181,11 @@ class netperf_db:
 
 	def log_iperf3(self, data):
 		row_data = ( data["client_id"], \
-			     data["timestamp"], \
-			     data["remote_host"], \
-		             data["rx_Mbps"], \
-			     data["tx_Mbps"], \
-			     data["retransmits"] )
+				data["timestamp"], \
+				data["remote_host"], \
+				data["rx_Mbps"], \
+				data["tx_Mbps"], \
+				data["retransmits"] )
 		sql = '''INSERT OR IGNORE INTO iperf3(client_id,epoch_time,remote_host,rx_Mbps,tx_Mbps,retransmits)
 			VALUES(?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
@@ -195,30 +195,30 @@ class netperf_db:
 		return cur.lastrowid
 
 	def log_speedtest(self,data):
-                row_data = ( data["client_id"], \
-                            data["timestamp"], \
-                            data["rx_Mbps"], \
-                            data["tx_Mbps"], \
-                            data["rx_bytes"],\
-                            data["tx_bytes"],\
-                            data["remote_host"], \
-                            data["url"], \
-                            data["ping"] )
-                sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
-                        VALUES(?,?,?,?,?,?,?,?,?);'''
-                cur = self.db_conn.cursor()
-                cur.execute(sql, row_data)
-                self.db_conn.commit()
-                cur.close()
-                return cur.lastrowid
+		row_data = ( data["client_id"], \
+				data["timestamp"], \
+				data["rx_Mbps"], \
+				data["tx_Mbps"], \
+				data["rx_bytes"],\
+				data["tx_bytes"],\
+				data["remote_host"], \
+				data["url"], \
+				data["ping"] )
+		sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
+			VALUES(?,?,?,?,?,?,?,?,?);'''
+		cur = self.db_conn.cursor()
+		cur.execute(sql, row_data)
+		self.db_conn.commit()
+		cur.close()
+		return cur.lastrowid
 
 	def log_bandwidth(self,data):
 		row_data = ( data["client_id"], \
-			     data["timestamp"], \
-		             data["rx_bytes"], \
-			     data["tx_bytes"], \
-			     data["rx_bps"], \
-			     data["tx_bps"])
+				 data["timestamp"], \
+				 data["rx_bytes"], \
+				 data["tx_bytes"], \
+				 data["rx_bps"], \
+				 data["tx_bps"])
 		sql = '''INSERT OR IGNORE INTO bandwidth(client_id,epoch_time,rx_bytes,tx_bytes,rx_bps,tx_bps)
 			VALUES(?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
@@ -229,66 +229,66 @@ class netperf_db:
 
 	def log_data_usage(self,data):
 		db_log.debug("start of log_data_usage")
-                cur = self.db_conn.cursor()
-                cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
-                col_rxtx_bytes=0
-                query_results = cur.fetchall()
+		cur = self.db_conn.cursor()
+		cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
+		col_rxtx_bytes=0
+		query_results = cur.fetchall()
 		db_log.debug("length of query results: {}".format(len(query_results)))
 		if len(query_results) > 0:
-			current_rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+			current_rxtx_bytes = int(query_results[0][col_rxtx_bytes])
 		else:
 			current_rxtx_bytes = 0
-		new_rxtx_bytes = current_rxtx_bytes + long(data["rxtx_bytes"])
+		new_rxtx_bytes = current_rxtx_bytes + int(data["rxtx_bytes"])
 		db_log.debug("new_rxtx_bytes: {}".format(new_rxtx_bytes))
-                row_data = ( data["client_id"], \
-                            data["timestamp"], \
-                            new_rxtx_bytes )
+		row_data = ( data["client_id"], \
+					data["timestamp"], \
+					new_rxtx_bytes )
 		db_log.debug("row_data: {}".format(row_data))
-                sql = '''INSERT OR IGNORE INTO data_usage(client_id,epoch_time,rxtx_bytes)
-                        VALUES(?,?,?);'''
-                cur.execute(sql, row_data)
-                self.db_conn.commit()
-                cur.close()
-                return cur.lastrowid
+		sql = '''INSERT OR IGNORE INTO data_usage(client_id,epoch_time,rxtx_bytes)
+				VALUES(?,?,?);'''
+		cur.execute(sql, row_data)
+		self.db_conn.commit()
+		cur.close()
+		return cur.lastrowid
 
 	def log_dns(self, dns_results):
-                # unpack dns_results tuple
-                client_id = dns_results["client_id"]
-                timestamp = dns_results["timestamp"]
-                internal_dns_ok = dns_results["internal_dns_ok"]
-                internal_dns_query_time = dns_results["internal_dns_query_time"]
-                internal_dns_failures = dns_results["internal_dns_failures"]
-                external_dns_ok = dns_results["external_dns_ok"]
-                external_dns_query_time = dns_results["external_dns_query_time"]
-                external_dns_failures = dns_results["external_dns_failures"]
+		# unpack dns_results tuple
+		client_id = dns_results["client_id"]
+		timestamp = dns_results["timestamp"]
+		internal_dns_ok = dns_results["internal_dns_ok"]
+		internal_dns_query_time = dns_results["internal_dns_query_time"]
+		internal_dns_failures = dns_results["internal_dns_failures"]
+		external_dns_ok = dns_results["external_dns_ok"]
+		external_dns_query_time = dns_results["external_dns_query_time"]
+		external_dns_failures = dns_results["external_dns_failures"]
 
-                # map booleans to 1 = True, 0 = False
-                if internal_dns_ok:
-                        idns_ok = 1
-                else:
-                        idns_ok = 0
+		# map booleans to 1 = True, 0 = False
+		if internal_dns_ok:
+			idns_ok = 1
+		else:
+			idns_ok = 0
 
-                if external_dns_ok:
-                        edns_ok = 1
-                else:
-                        edns_ok = 0
+		if external_dns_ok:
+			edns_ok = 1
+		else:
+			edns_ok = 0
 
-                repacked_dns_results = (client_id,
-                                        timestamp,
-                                        idns_ok,
-                                        internal_dns_query_time,
-                                        internal_dns_failures,
-                                        edns_ok,
-                                        external_dns_query_time,
-                                        external_dns_failures)
+		repacked_dns_results = (client_id,
+								timestamp,
+								idns_ok,
+								internal_dns_query_time,
+								internal_dns_failures,
+								edns_ok,
+								external_dns_query_time,
+								external_dns_failures)
 
-                sql = '''INSERT OR IGNORE INTO dns(client_id,epoch_time,internal_dns_ok,internal_dns_query_time,internal_dns_failures,external_dns_ok,external_dns_query_time,external_dns_failures)
-                        VALUES(?,?,?,?,?,?,?,?);'''
-                cur = self.db_conn.cursor()
-                cur.execute(sql, repacked_dns_results)
-                self.db_conn.commit()
-                cur.close()
-                return cur.lastrowid
+		sql = '''INSERT OR IGNORE INTO dns(client_id,epoch_time,internal_dns_ok,internal_dns_query_time,internal_dns_failures,external_dns_ok,external_dns_query_time,external_dns_failures)
+				VALUES(?,?,?,?,?,?,?,?);'''
+		cur = self.db_conn.cursor()
+		cur.execute(sql, repacked_dns_results)
+		self.db_conn.commit()
+		cur.close()
+		return cur.lastrowid
 
 	def get_isp_outages(self, query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
@@ -308,8 +308,8 @@ class netperf_db:
 		col_time=1
 		col_rx_Mbps=2
 		col_tx_Mbps=3
-                col_rx_bytes=4
-                col_tx_bytes=5
+		col_rx_bytes=4
+		col_tx_bytes=5
 		col_remote_host=6
 		col_url=7
 		col_ping=8
@@ -317,9 +317,9 @@ class netperf_db:
 		for i in cur.fetchall():
 			results.append({"timestamp" : i[col_time], \
 					"rx_Mbps" : i[col_rx_Mbps], \
-				        "tx_Mbps" : i[col_tx_Mbps], \
-                                        "rx_bytes" : i[col_rx_bytes], \
-                                        "tx_bytes" : i[col_tx_bytes], \
+					"tx_Mbps" : i[col_tx_Mbps], \
+					"rx_bytes" : i[col_rx_bytes], \
+					"tx_bytes" : i[col_tx_bytes], \
 					"ping" : i[col_ping], \
 					"remote_host" : i[col_remote_host],\
 					"url" : i[col_url]})
@@ -338,7 +338,7 @@ class netperf_db:
 		if test_count == 0:
 			rxtx_bytes = 0
 		else:
-			rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+			rxtx_bytes = int(query_results[0][col_rxtx_bytes])
 		results.append({"test_count" : test_count, \
 				"rxtx_bytes" : rxtx_bytes})
 		cur.close()
@@ -347,16 +347,16 @@ class netperf_db:
 
 	def get_data_usage(self):
 		db_log.debug("start of get_data_usage")
-                cur = self.db_conn.cursor()
-                cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
-                col_rxtx_bytes=0
-                query_results = cur.fetchall()
+		cur = self.db_conn.cursor()
+		cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
+		col_rxtx_bytes=0
+		query_results = cur.fetchall()
 		cur.close()
 		db_log.debug("length of query results: {}".format(len(query_results)))
 		if len(query_results) > 0:
-			rxtx_bytes = long(query_results[0][col_rxtx_bytes])
+			rxtx_bytes = int(query_results[0][col_rxtx_bytes])
 		else:
-			rxtx_bytes = long(0)
+			rxtx_bytes = int(0)
 		results={"rxtx_bytes" : rxtx_bytes}
 		return results
 
@@ -459,12 +459,12 @@ class netperf_db:
 				external_dns_ok = False
 
 			results.append({"timestamp" : i[col_time], \
-					"internal_dns_ok" : internal_dns_ok, \
-				        "internal_dns_query_time" : i[col_internal_dns_query_time], \
-				        "internal_dns_failures" : i[col_internal_dns_failures], \
-					"external_dns_ok" : external_dns_ok, \
-				        "external_dns_query_time" : i[col_external_dns_query_time], \
-				        "external_dns_failures" : i[col_external_dns_failures]})
+						"internal_dns_ok" : internal_dns_ok, \
+						"internal_dns_query_time" : i[col_internal_dns_query_time], \
+						"internal_dns_failures" : i[col_internal_dns_failures], \
+						"external_dns_ok" : external_dns_ok, \
+						"external_dns_query_time" : i[col_external_dns_query_time], \
+						"external_dns_failures" : i[col_external_dns_failures]})
 		cur.close()
 		return results
 
@@ -511,7 +511,7 @@ class netperf_db:
 		for i in cur.fetchall():
 			results.append({"timestamp" : i[col_time], \
 					"rx_bps" : i[col_rx_bps], \
-				        "tx_bps" : i[col_tx_bps]})
+					"tx_bps" : i[col_tx_bps]})
 		cur.close()
 		return results
 
@@ -573,9 +573,9 @@ class db_queue():
 	queue = None
 	def __init__(self):
 		try:
-	        	self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE, posix_ipc.O_CREX)
+			self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE, posix_ipc.O_CREX)
 		except:
-        		self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE)
+			self.queue = posix_ipc.MessageQueue(DB_WRITE_QUEUE)
 
 	def write(self,json_object):
 		self.queue.send(json.dumps(json_object))
@@ -594,7 +594,7 @@ class dashboard_queue():
 	def __init__(self,queue_name):
 		try:
 			# open/create dashboard message queue in non-blocking mode. Non-blocking mode prevents the database daemon from blocking if the dashboard app fails to read from the queue.
-	        	self.queue = posix_ipc.MessageQueue(str(queue_name), posix_ipc.O_CREAT|posix_ipc.O_NONBLOCK)
+			self.queue = posix_ipc.MessageQueue(str(queue_name), posix_ipc.O_CREAT|posix_ipc.O_NONBLOCK)
 		except:
 			db_log.error("unable to open/create the dashboard message queue")
 			pass

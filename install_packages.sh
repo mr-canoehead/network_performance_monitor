@@ -2,9 +2,9 @@
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
-apt_packages=( sqlite3 bridge-utils python-posix-ipc python-daemon python-numpy python-matplotlib iperf3 \
+apt_packages=( sqlite3 bridge-utils python3-posix-ipc python3-daemon python3-numpy python3-matplotlib iperf3 \
                dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
-               git bc nginx gunicorn python-pip)
+               bc nginx gunicorn3 python3-pip)
 
 declare -A pip_packages
 pip_packages[Flask]=flask
@@ -31,7 +31,7 @@ if [[ "$result" == "speedtest-cli" ]]; then
 	apt_packages+=( speedtest-cli )
 else
 	# uninstall speedtest-cli, add Ookla client + dependencies to the package list
-	dpkg -s speedtest-cli
+	dpkg -s speedtest-cli > /dev/null 2>&1
 	if [[ "$?" -eq 0 ]]; then
 		sudo apt remove -y speedtest-cli
 	fi
@@ -88,7 +88,7 @@ do
 		do
 			echo "	Installing pip package $pip_package..."
 			echo
-			pip install "$pip_package"
+			pip3 install "$pip_package"
 			echo
 			# check that the package is now installed
 			python -c "import ${pip_packages[$pip_package]}" > /dev/null 2>&1
@@ -111,10 +111,10 @@ if [[ "$all_packages_installed" == "false" ]]; then
 	echo "       Then run this script again."
 else
 	# if the Ookla Speedtest CLI application is installed, run it so that the user can accept the Ookla license agreement.
-        dpkg -s speedtest
-        if [[ "$?" -eq 0 ]]; then
-                whiptail --title "Ookla license agreement" --msgbox "The system will now run the Speedtest CLI application so that you can accept the Ookla license agreement." 10 80 3>&1 1>&2 2>&3
-                sudo -u pi speedtest
+		dpkg -s speedtest > /dev/null 2>&1
+		if [[ "$?" -eq 0 ]]; then
+			whiptail --title "Ookla license agreement" --msgbox "The system will now run the Speedtest CLI application so that you can accept the Ookla license agreement." 10 80 3>&1 1>&2 2>&3
+			sudo -u pi speedtest
         fi
 	echo
 	echo "All required packages were installed successfully."

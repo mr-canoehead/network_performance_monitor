@@ -14,7 +14,7 @@ import logging
 from netperf_settings import netperf_settings
 
 class bcolors:
-        FAIL = '\033[91m'
+	FAIL = '\033[91m'
 	WARNING = '\033[93m'
 	ENDC = '\033[0m'
 
@@ -52,10 +52,10 @@ def warn (warning_str):
 
 # Make sure we're running as root
 if os.geteuid() != 0:
-    critical_error ("This script must be run as root.\nPlease try again using 'sudo'.")
+	critical_error ("This script must be run as root.\nPlease try again using 'sudo'.")
 
 # read the interface configuration JSON file
-print "Reading interfaces file " + INTERFACES_FILE
+print ("Reading interfaces file " + INTERFACES_FILE)
 
 with open(INTERFACES_FILE,"r+") as json_file:
 	interface_info = json.load(json_file)
@@ -125,10 +125,10 @@ for interface in network_interfaces:
 			if if_details['namespace'] is not None and (if_details['namespace'] not in ("root", "default")):
 				# check if interface supports switching network namespace
 				with open('/sys/class/net/' + interface + "/phy80211/name", 'r') as file:
-   	 				if_details['phy_name'] = file.read().replace('\n', '')
+					if_details['phy_name'] = file.read().replace('\n', '')
 					cmd = "/sbin/iw phy " + if_details['phy_name'] + " info | /bin/grep netns"
 					if os.system("/sbin/iw phy " + if_details['phy_name'] + " info | /bin/grep netns > /dev/null") != 0:
-						critical_error("Wireless interface " + interface + " is configured to use its own network namespace, but its driver does not support the set_wiphy_netns command required to do so. Please verify the interface configuration file.")
+							critical_error("Wireless interface " + interface + " is configured to use its own network namespace, but its driver does not support the set_wiphy_netns command required to do so. Please verify the interface configuration file.")
 
 		#wpa_supplicant_config = CONFIG_PATH + "/wpa_supplicant_" + interface + ".conf"
 		if not os.path.isfile(if_details["wpa_supplicant_config"]):
@@ -206,12 +206,12 @@ print ("Network interfaces have been configured.")
 print ("You can access the interfaces from another computer via ssh using their IP addresses as follows:\n")
 print ("IPv4 address	Interface")
 for interface in network_interfaces:
-	print network_interfaces[interface]['ipv4_addr'] + "	" + interface
-print ("\nExample usage:")
-print ("On another computer, run an iperf3 test like this:")
-test_if = next(iter(network_interfaces))
-test_if_details = network_interfaces[test_if]
-print ("iperf3 -c " + test_if_details['ipv4_addr'])
-print ("This will test the " + test_if_details['type'] + " interface " + test_if + " on this computer.")
+	print (network_interfaces[interface]['ipv4_addr'] + "	" + interface)
+	print ("\nExample usage:")
+	print ("On another computer, run an iperf3 test like this:")
+	test_if = next(iter(network_interfaces))
+	test_if_details = network_interfaces[test_if]
+	print ("iperf3 -c " + test_if_details['ipv4_addr'])
+	print ("This will test the " + test_if_details['type'] + " interface " + test_if + " on this computer.")
 
-print ("\nYou can switch to a network namespace using the following command:\nsudo ip netns exec <namespace name> bash -c \"su pi\"\ne.g.:\nsudo ip netns exec ns_wlan0 bash -c \"su pi\"")
+	print ("\nYou can switch to a network namespace using the following command:\nsudo ip netns exec <namespace name> bash -c \"su pi\"\ne.g.:\nsudo ip netns exec ns_wlan0 bash -c \"su pi\"")

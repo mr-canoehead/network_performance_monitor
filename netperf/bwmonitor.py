@@ -41,46 +41,46 @@ def bwmonitor(interface):
 	last_time = None
 	dbq = db_queue()
 	while True:
-        	loop_start_time = time.time()
-        	rx_bytes_file.seek(0)
-        	rx_bytes = long(rx_bytes_file.read().strip())
-        	tx_bytes_file.seek(0)
-        	tx_bytes = long(tx_bytes_file.read().strip())
-        	if last_time is not None:
-	                if last_rx_bytes > rx_bytes:
-        	                # rollover occurred
-                        	rx_bytes_delta = rx_bytes + (MAX_32UINT - last_rx_bytes)
-          	 	else:
-                	        rx_bytes_delta = rx_bytes - last_rx_bytes
-               		if last_tx_bytes > tx_bytes:
-                        	# rollover occurred
-                        	tx_bytes_delta = tx_bytes + (MAX_32UINT - last_tx_bytes)
-                	else:
-                        	tx_bytes_delta = tx_bytes - last_tx_bytes
-                	time_delta = loop_start_time - last_time
-                	rx_bps = float(rx_bytes_delta * 8) / time_delta
-                	tx_bps = float(tx_bytes_delta * 8) / time_delta
-                	bw_data = { "type" : "bandwidth", \
-                            		"data" : {  "client_id" : client_id, \
-                                        "timestamp" : loop_start_time, \
-                                        "rx_bytes" : rx_bytes_delta, \
-                                        "tx_bytes" : tx_bytes_delta, \
-                                        "rx_bps" : rx_bps, \
-                                        "tx_bps" : tx_bps}
-                          }
-                	dbq.write(bw_data)
+		loop_start_time = time.time()
+		rx_bytes_file.seek(0)
+		rx_bytes = long(rx_bytes_file.read().strip())
+		tx_bytes_file.seek(0)
+		tx_bytes = long(tx_bytes_file.read().strip())
+		if last_time is not None:
+			if last_rx_bytes > rx_bytes:
+				# rollover occurred
+				rx_bytes_delta = rx_bytes + (MAX_32UINT - last_rx_bytes)
+			else:
+				rx_bytes_delta = rx_bytes - last_rx_bytes
+				if last_tx_bytes > tx_bytes:
+					# rollover occurred
+					tx_bytes_delta = tx_bytes + (MAX_32UINT - last_tx_bytes)
+				else:
+					tx_bytes_delta = tx_bytes - last_tx_bytes
+					time_delta = loop_start_time - last_time
+					rx_bps = float(rx_bytes_delta * 8) / time_delta
+					tx_bps = float(tx_bytes_delta * 8) / time_delta
+					bw_data = { "type" : "bandwidth", \
+								"data" : {  "client_id" : client_id, \
+								"timestamp" : loop_start_time, \
+								"rx_bytes" : rx_bytes_delta, \
+								"tx_bytes" : tx_bytes_delta, \
+								"rx_bps" : rx_bps, \
+								"tx_bps" : tx_bps}
+									}
+				dbq.write(bw_data)
 
-        	last_time = loop_start_time
-       		last_rx_bytes = rx_bytes
-        	last_tx_bytes = tx_bytes
+				last_time = loop_start_time
+				last_rx_bytes = rx_bytes
+				last_tx_bytes = tx_bytes
 
-        	# sleep off remaining time
-        	sleeptime = 1.0 - (time.time() - loop_start_time)
-        	if (sleeptime > 0):
-			try:
-				time.sleep (sleeptime)
-			except:
-				pass
+				# sleep off remaining time
+				sleeptime = 1.0 - (time.time() - loop_start_time)
+				if (sleeptime > 0):
+					try:
+						time.sleep (sleeptime)
+					except:
+						pass
 
 if __name__ == '__main__':
 	bwmonitor_log.debug("__main__")
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 				bwmonitor_log.setLevel(logging.CRITICAL)
 	bwmonitor_log.debug("Watching interface: {}".format(interface))
 	if interface == None:
-		print "Error: an interface is required."
+		print ("Error: an interface is required.")
 		bwmonitor_log.error("An interface is required.")
 		sys.exit(2)
 

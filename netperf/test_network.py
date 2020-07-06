@@ -150,7 +150,7 @@ def test_isp(test_exec_namespace,dbq):
 		else:
 			speedtest_server_opt = ""
 		cmd = "{}speedtest --format=json {}".format(cmd_prefix,speedtest_server_opt)
-	print cmd
+	print (cmd)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
@@ -234,14 +234,14 @@ def test_name_resolution(test_exec_namespace,dbq):
 	# try resolving names using local DNS
 	cmd = "{}dig www.example.com +noall +stats".format(cmd_prefix)
 	for i in range(5):
-		print "Testing local DNS {}...".format(int(i))
+		print ("Testing local DNS {}...".format(int(i)))
 		ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 		cmd_output = ps.communicate()[0]
 		if ps.returncode == 0:
 			test_log.info("Internal DNS ok.")
 			internal_dns_ok = True
 			internal_dns_query_time = cmd_output.partition("Query time:")[2].split()[0]
-			#print "Query time is: |{}| ".format(local_query_time)
+			#print ("Query time is: |{}| ".format(local_query_time))
 			break
 		else:
 			test_log.info("Internal DNS failure.")
@@ -251,14 +251,14 @@ def test_name_resolution(test_exec_namespace,dbq):
 	for dns_server in EXTERNAL_DNS_SERVERS:
 		cmd = "{}dig @{} www.example.com +noall +stats".format(cmd_prefix,dns_server)
 		for i in range(5):
-			print "Testing external DNS {} {}...".format(dns_server,int(i))
+			print ("Testing external DNS {} {}...".format(dns_server,int(i)))
 			ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 			cmd_output = ps.communicate()[0]
 			if ps.returncode == 0:
 				test_log.info("External DNS ok.")
 				external_dns_ok = True
 				external_dns_query_time = cmd_output.partition("Query time:")[2].split()[0]
-				#print "External query time is : |{}|".format(external_query_time)
+				#print ("External query time is : |{}|".format(external_query_time))
 				break
 			else:
 				test_log.info("External DNS failure.")

@@ -8,22 +8,22 @@ import signal
 
 def nz_values(arr):
 # return an array containing all non-zero values in the source array
-        nztuples = np.nonzero(arr)
-        nzvalues = []
-        for i in nztuples[0]:
-                nzvalues.append(arr[i])
-        return nzvalues
+	nztuples = np.nonzero(arr)
+	nzvalues = []
+	for i in nztuples[0]:
+		nzvalues.append(arr[i])
+	return nzvalues
 
 def get_client_id():
 	cmd = "sum /etc/machine-id | cut -f 1 -d ' '"
-        ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
-        (sn_str,return_code) = ps.communicate()
-        return sn_str.strip().lstrip("0")
+	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
+	(sn_str,return_code) = ps.communicate()
+	return (sn_str.decode()).rstrip("\n")
 
 class sigterm_handler():
-        def sh(self,signalNumber, frame):
-                self.terminate = True
-        def __init__(self):
-                self.terminate = False
-                signal.signal(signal.SIGTERM, self.sh)
+	def sh(self,signalNumber, frame):
+		self.terminate = True
+	def __init__(self):
+		self.terminate = False
+		signal.signal(signal.SIGTERM, self.sh)
 

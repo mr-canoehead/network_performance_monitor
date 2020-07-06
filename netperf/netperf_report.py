@@ -32,10 +32,10 @@ REPORTS_PATH="{}/reports".format(DATA_ROOT)
 TMP_PATH="{}/tmp".format(REPORTS_PATH)
 
 if not os.path.isdir(REPORTS_PATH):
-        os.makedirs(REPORTS_PATH)
+	os.makedirs(REPORTS_PATH)
 
 if not os.path.isdir(TMP_PATH):
-        os.makedirs(TMP_PATH)
+	os.makedirs(TMP_PATH)
 
 logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
 report_log = logging.getLogger("daily report")
@@ -51,28 +51,28 @@ def fractional_hour(timestamp):
 	return hour_frac
 
 def align_yaxis(ax1, v1, ax2, v2):
-    """adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
-    _, y1 = ax1.transData.transform((0, v1))
-    _, y2 = ax2.transData.transform((0, v2))
-    inv = ax2.transData.inverted()
-    _, dy = inv.transform((0, 0)) - inv.transform((0, y1-y2))
-    miny, maxy = ax2.get_ylim()
-    ax2.set_ylim(miny+dy, maxy+dy)
+	"""adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
+	_, y1 = ax1.transData.transform((0, v1))
+	_, y2 = ax2.transData.transform((0, v2))
+	inv = ax2.transData.inverted()
+	_, dy = inv.transform((0, 0)) - inv.transform((0, y1-y2))
+	miny, maxy = ax2.get_ylim()
+	ax2.set_ylim(miny+dy, maxy+dy)
 
 class pgf_keyvals:
-        def __init__ (self):
-                self.keyvalues = []
+	def __init__ (self):
+		self.keyvalues = []
+		
+	def add(self,key,value):
+		self.keyvalues.append({ "key" : key, "value" : value })
 
-        def add(self,key,value):
-                self.keyvalues.append({ "key" : key, "value" : value })
-
-        def __str__(self):
-                output = ""
-                for kv in self.keyvalues:
-                        key = kv["key"]
-                        value = kv["value"]
-                        output += "\\pgfkeyssetvalue{{{}}}{{{}}}\n".format(key,value)
-                return output
+		def __str__(self):
+			output = ""
+			for kv in self.keyvalues:
+				key = kv["key"]
+				value = kv["value"]
+				output += "\\pgfkeyssetvalue{{{}}}{{{}}}\n".format(key,value)
+			return output
 
 def main():
 	report_keyvals = pgf_keyvals()
@@ -244,7 +244,7 @@ def main():
 		for r in rows:
 			rx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["rx_bps"]/1e6))
 			tx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["tx_bps"]/1e6))
- 			bandwidth_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
+			bandwidth_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
 			bandwidth_data["rx"]["bps"].append(r["rx_bps"])
 			bandwidth_data["rx"]["Mbps"].append(round(r["rx_bps"]/1e6,2))
 			bandwidth_data["tx"]["bps"].append(r["tx_bps"])
@@ -310,7 +310,7 @@ def main():
 		dns_data["times"]["raw"] = []
 
 		for r in rows:
- 			dns_data["internal"]["query_times"]["raw"].append(r["internal_dns_query_time"])
+			dns_data["internal"]["query_times"]["raw"].append(r["internal_dns_query_time"])
 			idnsf = r["internal_dns_failures"]
 			if idnsf > max_dns_failures:
 				max_dns_failures = idnsf
@@ -406,7 +406,7 @@ def main():
 		iperf3_data["averages"]["tx_Mbps"] = np.mean(iperf3_data["tx_Mbps"]["np_array"])
 		iperf3_data["averages"]["retransmits"] = np.mean(iperf3_data["retransmits"]["np_array"])
 
-	        axes={}
+		axes={}
 		fig, axes["rx_tx"] = plt.subplots()
 		axes["rx_tx"].set_title("iperf3 test results for interface {} on {}".format(iperf3_data["remote_host"],query_date.strftime("%Y-%m-%d")))
 		axes["rx_tx"].set_xlabel('Time of day (24 hour clock)')
@@ -417,7 +417,7 @@ def main():
 		fig.subplots_adjust(bottom=0.2)
 		axes["rx_tx"].set_xlim(0,24)
 		axes["rx_tx"].set_xticks(np.arange(0,24,1))
-        	linesum = lines["rx"] + lines["tx"]
+		linesum = lines["rx"] + lines["tx"]
 		if np.count_nonzero(iperf3_data["retransmits"]["raw"]) > 0:
 			axes["retransmits"] = axes["rx_tx"].twinx()
 			color = "m"
@@ -448,7 +448,7 @@ def main():
 		legend_labels = [l.get_label() for l in linesum]
 		axes["rx_tx"].legend(linesum,legend_labels,loc='upper center', bbox_to_anchor=(0.5, -0.15), shadow=True, ncol=legend_columns)
 		chart_filename = "{}_iperf3_chart.pdf".format(iperf3_data["remote_host"])
-        	replacement_values = {}
+		replacement_values = {}
 		fig.savefig("{}/{}".format(TMP_PATH,chart_filename),format='pdf', bbox_inches='tight')
 		plt.cla()
 
@@ -467,14 +467,14 @@ def main():
 	interface_names = ",".join(iperf3_interfaces)
 	report_keyvals.add("interfaces/interface_names", interface_names)
 
-        st_data_usage = db.get_speedtest_data_usage(datetime.today())
-        test_count = st_data_usage[0]["test_count"]
-        if test_count > 0:
-                rxtx_MB = long(st_data_usage[0]["rxtx_bytes"])/long(1e6)
-                avg_rxtx_MB = float(rxtx_MB)/float(test_count)
-        else:
-                rxtx_MB = 0
-                avg_rxtx_MB = 0
+	st_data_usage = db.get_speedtest_data_usage(datetime.today())
+	test_count = st_data_usage[0]["test_count"]
+	if test_count > 0:
+		rxtx_MB = long(st_data_usage[0]["rxtx_bytes"])/long(1e6)
+		avg_rxtx_MB = float(rxtx_MB)/float(test_count)
+	else:
+		rxtx_MB = 0
+		avg_rxtx_MB = 0
 
 	ns = netperf_settings()
 	eq = ns.get_speedtest_enforce_quota()

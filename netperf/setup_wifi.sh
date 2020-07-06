@@ -121,11 +121,11 @@ do
 		associated=true
 	else
 		#whiptail --title "$TITLE" --msgbox "Unable to connect interface $INTERFACE to the wireless network $ssid. Please choose a different wireless network or double-check your password." 15 40 3>&1 1>&2 2>&3
-                whiptail --title "$TITLE" --yesno "Unable to connect interface $INTERFACE to the wireless network $ssid.\n\nPlease choose a different wireless network or double-check your password.\n\nDo you want to retry configuring the wireless network for this interface?" 13 80 3>&1 1>&2 2>&3
-                if [[ "$?" -eq 1 ]]; then
-                        whiptail --title "$TITLE" --msgbox "You will need to create a wpa_supplicant file for the interface $INTERFACE manually. Please refer to the sample configuration files in the Wiki for example wpa_supplicant files." 12 80 3>&1 1>&2 2>&3
-                        skip_interface=true
-                fi
+		whiptail --title "$TITLE" --yesno "Unable to connect interface $INTERFACE to the wireless network $ssid.\n\nPlease choose a different wireless network or double-check your password.\n\nDo you want to retry configuring the wireless network for this interface?" 13 80 3>&1 1>&2 2>&3
+	if [[ "$?" -eq 1 ]]; then
+		 whiptail --title "$TITLE" --msgbox "You will need to create a wpa_supplicant file for the interface $INTERFACE manually. Please refer to the sample configuration files in the Wiki for example wpa_supplicant files." 12 80 3>&1 1>&2 2>&3
+		skip_interface=true
+		fi
 		associated=false
 	fi
 done

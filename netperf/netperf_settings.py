@@ -13,18 +13,18 @@ APP_PATH="/opt/netperf"
 SETTINGS_FILE="{}/config/netperf.json".format(APP_PATH)
 
 def log_level_switcher(log_level_txt):
-    log_levels = {
-        "CRITICAL" : logging.INFO,
-        "ERROR" : logging.ERROR,
-        "WARNING": logging.WARNING,
-        "INFO": logging.INFO,
-        "DEBUG": logging.DEBUG
-    }
-    if log_level_txt in log_levels:
-        log_level = log_levels[log_level_txt]
-    else:
-        log_level = logging.NOTSET
-    return log_level
+	log_levels = {
+		"CRITICAL" : logging.INFO,
+		"ERROR" : logging.ERROR,
+		"WARNING": logging.WARNING,
+		"INFO": logging.INFO,
+		"DEBUG": logging.DEBUG
+	}
+	if log_level_txt in log_levels:
+		log_level = log_levels[log_level_txt]
+	else:
+		log_level = logging.NOTSET
+	return log_level
 
 
 class netperf_settings:
@@ -197,9 +197,9 @@ def main():
 	ns = netperf_settings()
 	unixOptions = 'g:s:v'
 	gnuOptions = ['get=', 'set=', 'value=']
-        try:
+	try:
 		options, remainder = getopt.getopt(sys.argv[1:], unixOptions, gnuOptions)
-        except getopt.error as err:
+	except getopt.error as err:
 		#output error, and return with an error code
 		print(str(err))
 		sys.exit(2)
@@ -208,35 +208,35 @@ def main():
 	setting = ""
 	value = ""
 	for opt, arg in options:
-    		if opt in ('-g', '--get'):
+		if opt in ('-g', '--get'):
 			action = "get"
-        		setting = arg
-    		else:
+			setting = arg
+		else:
 			if opt in ('-s', '--set'):
 				action = "set"
-        			setting = arg
-    			else:
+				setting = arg
+			else:
 				if opt in ('-v', '--value'):
-        				value = arg
+					value = arg
 
 	if action == "get":
 		if setting == "db_filename":
-			print ns.get_db_filename()
+			print (ns.get_db_filename())
 		else:
 			if setting == "log_filename":
-				print ns.get_log_filename()
+				print (ns.get_log_filename())
 			else:
 				if setting == "data_root":
-					print ns.get_data_root()
+					print (ns.get_data_root())
 				else:
 					if setting == "report_path":
-						print ns.get_report_path()
+						print (ns.get_report_path())
 					else:
 						if setting == "speedtest_server_id":
-							print ns.get_speedtest_server_id()
+							print (ns.get_speedtest_server_id())
 						else:
 							if setting == "speedtest_client":
-								print ns.get_speedtest_client()
+								print (ns.get_speedtest_client())
 
 	if action == "set":
 		if setting == "data_usage_quota_GB":
@@ -287,15 +287,15 @@ def main():
 									ns.set_dashboard_enabled(False)
 								else:
 									print ("dashboard_enabled value must be True or False")
-                                                else:
-                                                        if setting == "bwmonitor_enabled":
-                                                                if value.lower() == "true":
+						else:
+							if setting == "bwmonitor_enabled":
+								if value.lower() == "true":
 									ns.set_bandwidth_monitor_enabled(True)
-                                                                else:
-                                                                        if value.lower() == "false":
-                                                                                ns.set_bandwidth_monitor_enabled(False)
-                                                                        else:
-                                                                                print ("bwmonitor_enabled value must be True or False")
+								else:
+									if value.lower() == "false":
+										ns.set_bandwidth_monitor_enabled(False)
+									else:
+										print ("bwmonitor_enabled value must be True or False")
 							else:
 								if setting == "speedtest_client":
 									if value.lower() == "ookla":

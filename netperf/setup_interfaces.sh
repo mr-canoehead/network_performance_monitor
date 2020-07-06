@@ -20,16 +20,16 @@ function check_addr_assigned () {
 }
 
 function check_valid_ipv4 () {
- if [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-   return 0
- else
-   return 255
+if [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+	return 0
+else
+	return 255
  fi
 }
 
 function pingtest() {
-        ping -c4 -w 5 $1 > /dev/null
-        echo $? > /tmp/pingtest.retcode
+	ping -c4 -w 5 $1 > /dev/null
+	echo $? > /tmp/pingtest.retcode
 }
 
 
@@ -53,8 +53,8 @@ fi
 # check if the interfaces have already been configured
 ns_count=$( ip netns list | wc -l )
 if [[ "$ns_count" -ne "0" ]]; then
-        whiptail --title "$TITLE" --msgbox "The network interfaces have already been configured on this system.\nTo reconfigure the interfaces, please refer to the page:\n\"Reconfiguring the network interfaces\" in the project Wiki" 10 76 3>&1 1>&2 2>&3
-        exit 1
+	whiptail --title "$TITLE" --msgbox "The network interfaces have already been configured on this system.\nTo reconfigure the interfaces, please refer to the page:\n\"Reconfiguring the network interfaces\" in the project Wiki" 10 76 3>&1 1>&2 2>&3
+	exit 1
 fi
 
 result=$(whiptail --title "$TITLE" --yesno "This script will generate a configuration file for the Network Performance Monitor network interfaces. If a configuration file already exists, it will be overwritten.\nBefore continuing, you should have performed the network interface identification and physical labeling procedure described in the wiki.\nDo you wish to proceed?" 13 80 3>&1 1>&2 2>&3)
@@ -64,8 +64,8 @@ fi
 
 # check that Predictable Network Interface Names is enabled
 if [[ -L "/etc/systemd/network/99-default.link" ]]; then
-        whiptail --title "$TITLE" --msgbox "Error: the Network Performance Monitor requires that Predictable Network Interface Names be enabled. It is not currently enabled. Please run raspi-config again and select the option:\n\n2 Network Options\n    N3 Network interface names - Enable/Disable predictable network interface names\n        Choose 'Yes'\n\nThis setting requires a reboot to take effect, after enabling Predictable Network Interface Names please reboot the system and run this setup script again." 15 100 3>&1 1>&2 2>&3
-        exit 1
+	whiptail --title "$TITLE" --msgbox "Error: the Network Performance Monitor requires that Predictable Network Interface Names be enabled. It is not currently enabled. Please run raspi-config again and select the option:\n\n2 Network Options\n    N3 Network interface names - Enable/Disable predictable network interface names\n        Choose 'Yes'\n\nThis setting requires a reboot to take effect, after enabling Predictable Network Interface Names please reboot the system and run this setup script again." 15 100 3>&1 1>&2 2>&3
+	exit 1
 fi
 
 
