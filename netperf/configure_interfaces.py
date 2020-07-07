@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
@@ -102,7 +102,7 @@ if bridge_info["configure"] == True:
 	os.system("{} ip link set {} up".format(cmd_prefix,bridge_name))
 
 	# start the bandwidth monitoring daemon
-	os.system("{} /sbin/runuser -l pi -c 'python /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,modem_interface))
+	os.system("{} /sbin/runuser -l pi -c 'python3 /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,modem_interface))
 
 #### Configure the performance testing interfaces
 print ("Configuring the performance testing interfaces...")

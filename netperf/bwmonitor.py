@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
@@ -43,9 +43,9 @@ def bwmonitor(interface):
 	while True:
 		loop_start_time = time.time()
 		rx_bytes_file.seek(0)
-		rx_bytes = long(rx_bytes_file.read().strip())
+		rx_bytes = int(rx_bytes_file.read().strip())
 		tx_bytes_file.seek(0)
-		tx_bytes = long(tx_bytes_file.read().strip())
+		tx_bytes = int(tx_bytes_file.read().strip())
 		if last_time is not None:
 			if last_rx_bytes > rx_bytes:
 				# rollover occurred
@@ -70,17 +70,17 @@ def bwmonitor(interface):
 									}
 				dbq.write(bw_data)
 
-				last_time = loop_start_time
-				last_rx_bytes = rx_bytes
-				last_tx_bytes = tx_bytes
+		last_time = loop_start_time
+		last_rx_bytes = rx_bytes
+		last_tx_bytes = tx_bytes
 
-				# sleep off remaining time
-				sleeptime = 1.0 - (time.time() - loop_start_time)
-				if (sleeptime > 0):
-					try:
-						time.sleep (sleeptime)
-					except:
-						pass
+		# sleep off remaining time
+		sleeptime = 1.0 - (time.time() - loop_start_time)
+		if (sleeptime > 0):
+			try:
+				time.sleep (sleeptime)
+			except:
+				pass
 
 if __name__ == '__main__':
 	bwmonitor_log.debug("__main__")

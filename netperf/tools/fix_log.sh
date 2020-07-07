@@ -8,7 +8,7 @@
 # run via the crontab). This ensures that the log file is writable by all processes run by the 'pi' user.
 
 logfile="netperf.log"
-data_root=$( /opt/netperf/netperf_settings.py --get data_root )
+data_root=$( python3 /opt/netperf/netperf_settings.py --get data_root )
 
 # create the log directory if it doesn't exist
 if [[ ! -d "$data_root/log" ]]; then

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
@@ -66,13 +66,13 @@ class pgf_keyvals:
 	def add(self,key,value):
 		self.keyvalues.append({ "key" : key, "value" : value })
 
-		def __str__(self):
-			output = ""
-			for kv in self.keyvalues:
-				key = kv["key"]
-				value = kv["value"]
-				output += "\\pgfkeyssetvalue{{{}}}{{{}}}\n".format(key,value)
-			return output
+	def __str__(self):
+		output = ""
+		for kv in self.keyvalues:
+			key = kv["key"]
+			value = kv["value"]
+			output += "\\pgfkeyssetvalue{{{}}}{{{}}}\n".format(key,value)
+		return output
 
 def main():
 	report_keyvals = pgf_keyvals()
@@ -119,14 +119,14 @@ def main():
 	speedtest_data["times"]["raw"] = []
 	speedtest_data["outages"] = {}
 	speedtest_data["outages"]["times"] = []
-	rx_bytes = long(0)
-	tx_bytes = long(0)
+	rx_bytes = 0
+	tx_bytes = 0
 
 	for r in rows:
 		speedtest_data["rx_Mbps"]["raw"].append(r["rx_Mbps"])
 		speedtest_data["tx_Mbps"]["raw"].append(r["tx_Mbps"])
-		rx_bytes += long(r["rx_bytes"])
-		tx_bytes += long(r["tx_bytes"])
+		rx_bytes += int(r["rx_bytes"])
+		tx_bytes += int(r["tx_bytes"])
 		speedtest_data["ping"]["raw"].append(r["ping"])
 		speedtest_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
 		if (r["rx_Mbps"] == 0) or (r["tx_Mbps"] == 0):
@@ -470,7 +470,7 @@ def main():
 	st_data_usage = db.get_speedtest_data_usage(datetime.today())
 	test_count = st_data_usage[0]["test_count"]
 	if test_count > 0:
-		rxtx_MB = long(st_data_usage[0]["rxtx_bytes"])/long(1e6)
+		rxtx_MB = int(st_data_usage[0]["rxtx_bytes"])/int(1e6)
 		avg_rxtx_MB = float(rxtx_MB)/float(test_count)
 	else:
 		rxtx_MB = 0
@@ -531,7 +531,7 @@ def main():
 		report_log.debug("Compiling report...")
 		ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 		(cmd_results,return_code) = ps.communicate()
-		if "rerun" not in cmd_results.lower():
+		if "rerun" not in str(cmd_results).lower():
 			report_log.debug("Report compiled.")
 			compiled = True
 		else:

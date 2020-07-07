@@ -28,7 +28,7 @@ write_access=false
 cancel=false
 until [[ ( "$valid_dir" == true && "$write_access" == true ) || "$cancel" == true ]]
 do
-	data_root=$( python "$CONFIG_APP" --get data_root )
+	data_root=$( python3 "$CONFIG_APP" --get data_root )
 	data_root=$( whiptail --title "$TITLE" --inputbox "Enter the data storage path:" 10 60 "$data_root" 3>&1 1>&2 2>&3 )
 	if [[ "$?" -eq 1 ]]; then
 		cancel=true
@@ -161,12 +161,12 @@ cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service /etc/systemd/
 systemctl enable netperf-dashboard.service
 
 # save the settings to the configuration file:
-python "$CONFIG_APP" --set data_root --value "$data_root"
-python "$CONFIG_APP" --set data_usage_quota_GB --value "$data_usage_quota_GB"
-python "$CONFIG_APP" --set enforce_quota --value "$enforce_quota"
+python3 "$CONFIG_APP" --set data_root --value "$data_root"
+python3 "$CONFIG_APP" --set data_usage_quota_GB --value "$data_usage_quota_GB"
+python3 "$CONFIG_APP" --set enforce_quota --value "$enforce_quota"
 
 # create the reports directory if it doesn't exist:
-report_path=$( "$CONFIG_APP" --get report_path )
+report_path=$( python3 "$CONFIG_APP" --get report_path )
 if [[ ! -d "$report_path" ]]; then
 	sudo -u pi mkdir -p "$report_path"
 fi
@@ -187,7 +187,7 @@ else
 		exit 1
 	fi
 fi
-python "$CONFIG_APP" --set speedtest_client --value "$speedtest_client"
+python3 "$CONFIG_APP" --set speedtest_client --value "$speedtest_client"
 
 # run the speed test server selection script
 source /opt/netperf/server_selection.sh

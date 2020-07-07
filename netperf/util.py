@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 

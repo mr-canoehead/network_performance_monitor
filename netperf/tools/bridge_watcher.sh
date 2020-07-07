@@ -2,7 +2,7 @@
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
-database=$( python /opt/netperf/netperf_settings.py --get db_filename )
+database=$( python3 /opt/netperf/netperf_settings.py --get db_filename )
 
 echo "Ethernet Bridge Watcher"
 echo "Press Q to exit."

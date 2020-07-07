@@ -10,7 +10,7 @@ tables+=( "speedtest" )
 tables+=( "data_usage" )
 tables+=( "isp_outages" )
 
-database=$( python /opt/netperf/netperf_settings.py --get db_filename )
+database=$( python3 /opt/netperf/netperf_settings.py --get db_filename )
 
 printf "\nDatabase file: %s\n\n" "$database"
 printf "%-12s %s\n" "Table" "Rowcount"

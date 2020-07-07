@@ -78,7 +78,7 @@ done
 for pip_package in "${!pip_packages[@]}"
 do
 	# test if package is already installed
-	python -c "import ${pip_packages[$pip_package]}" > /dev/null 2>&1
+	python3 -c "import ${pip_packages[$pip_package]}" > /dev/null 2>&1
 	if [[ "$?" -eq 0 ]]; then
 		echo "	$pip_package is installed"
 	else
@@ -91,7 +91,7 @@ do
 			pip3 install "$pip_package"
 			echo
 			# check that the package is now installed
-			python -c "import ${pip_packages[$pip_package]}" > /dev/null 2>&1
+			python3 -c "import ${pip_packages[$pip_package]}" > /dev/null 2>&1
 			if [[ "$?" -eq 0 ]]; then
 				echo "	$pip_package is installed"
 				package_installed=true

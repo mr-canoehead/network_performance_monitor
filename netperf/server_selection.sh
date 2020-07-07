@@ -11,7 +11,7 @@
 TITLE="Network Performance Monitor Configuration"
 INPUT_FIELD_SEPARATOR="\|\|"
 
-speedtestClient=$( /opt/netperf/netperf_settings.py --get speedtest_client )
+speedtestClient=$( python3 /opt/netperf/netperf_settings.py --get speedtest_client )
 if [[ "$speedtestClient" == "ookla" ]]; then
 	serverSelectionMethod=$( whiptail --title "$TITLE" --menu "Internet speed test server selection method:" 0 0 2 \
 		Automatic: "let the speedtest client choose servers automatically" \
@@ -25,7 +25,7 @@ if [[ "$speedtestClient" == "ookla" ]]; then
 		until [[ "$serverAccepted" == true ]] || [[ "$cancel" == true ]]
 		do
 			printf "\nRequesting speed test server list...\n"
-			serverList=$( /usr/bin/python /opt/netperf/get_speedtest_servers.py )
+			serverList=$( python3 /opt/netperf/get_speedtest_servers.py )
 			if [[ "$?" -ne 0 ]]; then
 				whiptail --title "$TITLE" --yesno "Unable to retrieve speed test server list.\nTry again?" 0 0
 					if [[ "$?" -eq 0 ]]; then
@@ -75,7 +75,7 @@ if [[ "$cancel" == true ]]; then
 	echo "Speed test server selection canceled."
 fi
 
-sudo /opt/netperf/netperf_settings.py --set speedtest_server_id --value "$serverId"
+sudo python3 /opt/netperf/netperf_settings.py --set speedtest_server_id --value "$serverId"
 
 if [[ "$serverId" != "None" ]]; then
 	echo "Speed test server ID set to $serverId"

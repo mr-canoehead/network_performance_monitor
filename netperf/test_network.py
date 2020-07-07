@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
@@ -38,7 +38,7 @@ def pingtest(test_exec_namespace,remote_host,dbq):
 	ping_results = ps.communicate()[0]
 	if len(ping_results) > 20:
 		# successful ping test
-		ping_stats = ping_results.strip().split('/')
+		ping_stats = ping_results.decode('utf-8').strip().split('/')
 		min = ping_stats[0]
 		avg = ping_stats[1]
 		max = ping_stats[2]
@@ -104,7 +104,7 @@ def test_local_network(test_exec_namespace, remote_host, dbq):
 	ping_results = ps.communicate()[0]
 	if len(ping_results) > 20:
 		# successful ping test
-		ping_stats = ping_results.strip().split('/')
+		ping_stats = ping_results.decode('utf-8').strip().split('/')
 		min = ping_stats[0]
 		avg = ping_stats[1]
 		max = ping_stats[2]
@@ -236,7 +236,7 @@ def test_name_resolution(test_exec_namespace,dbq):
 	for i in range(5):
 		print ("Testing local DNS {}...".format(int(i)))
 		ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
-		cmd_output = ps.communicate()[0]
+		cmd_output = str(ps.communicate()[0])
 		if ps.returncode == 0:
 			test_log.info("Internal DNS ok.")
 			internal_dns_ok = True
@@ -253,7 +253,7 @@ def test_name_resolution(test_exec_namespace,dbq):
 		for i in range(5):
 			print ("Testing external DNS {} {}...".format(dns_server,int(i)))
 			ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
-			cmd_output = ps.communicate()[0]
+			cmd_output = str(ps.communicate()[0])
 			if ps.returncode == 0:
 				test_log.info("External DNS ok.")
 				external_dns_ok = True
