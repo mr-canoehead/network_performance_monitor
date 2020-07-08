@@ -24,8 +24,12 @@ Note: the Network Performance Monitor is not a router, WiFi access point, or wir
 </p>
 
 ## Credits
-[Bryan Montford](https://github.com/GrfxGawd)
-  - suggested the Data Usage Quota feature to limit Internet data usage for users with metered Internet service.
+[Phil Reese](https://github.com/preese)
+  - initiated the Python 3 migration and did the heavy lifting on this effort.
 
 [Chris Tasich](https://github.com/christasich)
   - suggested using the Ookla Speedtest CLI application for more accurate speed test results on faster ISP connections, assisted with testing this addition to the project.
+
+[Bryan Montford](https://github.com/GrfxGawd)
+  - suggested the Data Usage Quota feature to limit Internet data usage for users with metered Internet service.
+
