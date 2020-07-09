@@ -28,7 +28,10 @@ Note: the Network Performance Monitor is not a router, WiFi access point, or wir
   - initiated the Python 3 migration and did the heavy lifting on this effort.
 
 [Chris Tasich](https://github.com/christasich)
-  - suggested using the Ookla Speedtest CLI application for more accurate speed test results on faster ISP connections, assisted with testing this addition to the project.
+ - suggested several features and assisted with testing them, including:
+    * Ookla Speedtest CLI integration for more accurate speed test results on faster ISP connections
+    * speed test server selection
+    * configuration option for the web server port
 
 [Bryan Montford](https://github.com/GrfxGawd)
   - suggested the Data Usage Quota feature to limit Internet data usage for users with metered Internet service.
