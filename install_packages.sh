@@ -2,7 +2,7 @@
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
-apt_packages=( sqlite3 bridge-utils python3-posix-ipc python3-daemon python3-numpy python3-matplotlib iperf3 \
+apt_packages=( sqlite3 python3-posix-ipc python3-daemon python3-numpy python3-matplotlib iperf3 \
                dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
                bc nginx gunicorn3 python3-pip)
 

@@ -91,10 +91,11 @@ if bridge_info["configure"] == True:
 	os.system("ip link set {} netns {}".format(router_interface,bridge_namespace))
 
 	# create the bridge interface
-	os.system("{} brctl addbr {}".format(cmd_prefix,bridge_name))
+	os.system("{} ip link add name {} type bridge".format(cmd_prefix,bridge_name))
 
 	# add network interfaces to the bridge
-	os.system("{} brctl addif {} {} {}".format(cmd_prefix,bridge_name,modem_interface,router_interface))
+	os.system("{} ip link set {} master {}".format(cmd_prefix,modem_interface,bridge_name))
+	os.system("{} ip link set {} master {}".format(cmd_prefix,router_interface,bridge_name))
 
 	# bring up the bridge interfaces
 	os.system("{} ip link set {} up".format(cmd_prefix,modem_interface))
