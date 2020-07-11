@@ -184,7 +184,7 @@ for interface in network_interfaces:
 		critical_error("Unble to assign IPv4 address for interface " + interface)
 
 	print("Configuring IPv4 default gateway for interface " + interface)
-	exit_code = os.system(cmd_prefix + "/sbin/route add default gw " + if_details['ipv4_gw'] + " " + interface)
+	exit_code = os.system(cmd_prefix + "/sbin/ip route replace default via " + if_details['ipv4_gw'] + " dev " + interface)
 	if exit_code != 0:
 		critical_error("Unble to add default gateway for interface " + interface)
 	if if_details['type'] == "wireless":
