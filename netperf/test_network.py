@@ -211,7 +211,7 @@ def test_isp(test_exec_namespace,dbq):
 		data_usage = { "type" : "data_usage", \
 				"data" : { "client_id" : client_id, \
 					   "timestamp" : time.time(), \
-					   "rxtx_bytes" : long(rx_bytes) + long(tx_bytes)}
+					   "rxtx_bytes" : int(rx_bytes) + int(tx_bytes)}
 				}
 		dbq.write(data_usage)
 
