@@ -9,7 +9,7 @@
 # open source client is installed, this script will default to the automatic server selection setting.
 
 TITLE="Network Performance Monitor Configuration"
-INPUT_FIELD_SEPARATOR="\|\|"
+INPUT_FIELD_SEPARATOR='\\|\\|'
 
 speedtestClient=$( python3 /opt/netperf/netperf_settings.py --get speedtest_client )
 if [[ "$speedtestClient" == "ookla" ]]; then

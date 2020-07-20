@@ -1,0 +1,19 @@
+[Unit]
+Description = Network Performance Monitor Database
+
+[Service]
+PermissionsStartOnly = true
+PIDFile = /run/netperf/netperf-db.pid
+User = pi
+Group = pi
+WorkingDirectory = /opt/netperf
+ExecStartPre = /bin/mkdir -p /run/netperf
+ExecStartPre = /bin/chown -R pi:pi /run/netperf
+ExecStartPre = /opt/netperf/tools/fix_log.sh
+ExecStart = /usr/bin/python3 /opt/netperf/netperf_db.py
+ExecReload = /bin/kill -s HUP $MAINPID
+ExecStop = /bin/kill -s TERM $MAINPID
+PrivateTmp = true
+
+[Install]
+WantedBy = multi-user.target

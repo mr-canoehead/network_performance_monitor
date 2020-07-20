@@ -7,8 +7,16 @@
 # It then calls the script setup_interfaces.sh which configures the network 
 # interfaces used by the system.
 
+source /opt/netperf/scriptutils.sh
+
 TITLE="Network Performance Monitor Configuration"
 CONFIG_APP="/opt/netperf/netperf_settings.py"
+OS_ID=$( get_os_id )
+
+if [[ ! "$OS_ID" =~ ^(raspbian|centos)$ ]]; then
+	printf "Unsupported operating system: $OS_ID\n"
+	exit 1
+fi
 
 # check that the script is being run as root
 if [[ $EUID -ne 0 ]]; then
@@ -143,22 +151,61 @@ until [[ "$port_accepted" == true ]]; do
 		fi
 done
 
-# copy the dashboard website configuration file
-cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/sites-available
-ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netperf-dashboard
-
-# disable the default nginx website (it conflicts with the dashboard app website):
-unlink /etc/nginx/sites-enabled/default
+if [[ "$OS_ID" == "raspbian" ]]; then
+	SITE_CONFIG=/etc/nginx/sites-available
+	# copy the dashboard website configuration file
+	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
+	ln -s /etc/nginx/sites-available/netperf-dashboard "$SITE_CONFIG"
+	# disable the default nginx website (it conflicts with the dashboard app website):
+	unlink /etc/nginx/sites-enabled/default
+else
+	if [[ "$OS_ID" == "centos" ]]; then
+		# copy nginx configuration file to disable the default server
+		cp /opt/netperf/dashboard/config/nginx/nginx.conf /etc/nginx/nginx.conf
+		SITE_CONFIG=/etc/nginx/conf.d/netperf-dashboard.conf
+		# copy the dashboard website configuration file
+		cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
+		# enable the NGINX service
+		systemctl enable nginx
+	fi
+fi
 
 if [[ "$port" != "80" ]]; then
 		# edit nginx site configuration file to change port
 		sedcmd="s/listen 80 default_server/listen $port default_server/g;s/listen \[::\]:80 default_server/listen \[::\]:$port default_server/g"
-		sed -i "$sedcmd" /etc/nginx/sites-available/netperf-dashboard
+		sed -i "$sedcmd" "$NGINX_CONFIG"
+fi
+
+if [[ "$OS_ID" == "centos" ]]; then
+	# if firewall is active add exceptions for http and iperf3
+	fw_active=$( firewalld_active )
+	if [[ "$fw_active" == true ]]; then
+		# allow http connections
+		firewall-cmd --zone=public --permanent --add-port="$port"/tcp
+		# allow iperf3 connections
+		firewall-cmd --zone=public --permanent --add-port=5201/tcp
+		firewall-cmd --reload
+	fi
+	sel_enforced=$( selinux_enforced )
+	if [[ "$sel_enforced" == true ]]; then
+		# allow NGINX to communicate with the network
+		setsebool -P httpd_can_network_connect 1
+	fi
 fi
 
 # copy the dashboard systemd unit file and enable the service
-cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service /etc/systemd/system
-systemctl enable netperf-dashboard.service
+if [[ "$OS_ID" == "centos" ]]; then
+	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.centos /etc/systemd/system/netperf-dashboard.service
+else
+	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.raspbian /etc/systemd/system/netperf-dashboard.service
+fi
+systemctl daemon-reload
+systemctl enable netperf-dashboard
+
+# copy the database systemd unit file and enable the service
+cp /opt/netperf/config/systemd/netperf-db.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable netperf-db
 
 # save the settings to the configuration file:
 python3 "$CONFIG_APP" --set data_root --value "$data_root"
@@ -174,13 +221,18 @@ fi
 # link the reports directory to the dashboard html directory:
 ln -s "$report_path" /opt/netperf/dashboard/html/reports
 
+if [[ "$OS_ID" == centos ]]; then
+	# set SELinux context for linked reports directory
+	chcon -v --type=httpd_sys_content_t /opt/netperf/dashboard/html/reports/*
+fi
+
 # detect which speedtest client is installed:
-dpkg -s speedtest-cli > /dev/null 2>&1
-if [[ "$?" -eq 0 ]]; then
+speedtest_cli_installed=$( pip_package_installed speedtest-cli )
+ookla_installed=$( os_package_installed speedtest )
+if [[ "$speedtest_cli_installed" == true ]]; then
 	speedtest_client="speedtest-cli"
 else
-	dpkg -s speedtest > /dev/null 2>&1
-	if [[ "$?" -eq 0 ]]; then
+	if [[ "$ookla_installed" == true ]]; then
 		speedtest_client="ookla"
 	else
 		echo "Error: a speedtest client is not installed. Please run the package installer script."
