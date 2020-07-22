@@ -181,19 +181,24 @@ if [[ "$OS_ID" == "centos" ]]; then
 	fw_active=$( firewalld_active )
 	if [[ "$fw_active" == true ]]; then
 		# allow http connections
+		printf "Opening port $port/tcp for the web server...\n"
 		firewall-cmd --zone=public --permanent --add-port="$port"/tcp
 		# allow iperf3 connections
+		printf "Opening port 5201/tcp for iperf3 connections...\n"
 		firewall-cmd --zone=public --permanent --add-port=5201/tcp
+		printf "Reloading firewall rules...\n"
 		firewall-cmd --reload
 	fi
 	sel_enforced=$( selinux_enforced )
 	if [[ "$sel_enforced" == true ]]; then
 		# allow NGINX to communicate with the network
+		printf "Setting SELinux network access permission for the web server...\n"
 		setsebool -P httpd_can_network_connect 1
 	fi
 fi
 
 # copy the dashboard systemd unit file and enable the service
+printf "Installing systemd unit file for the dashboard application...\n"
 if [[ "$OS_ID" == "centos" ]]; then
 	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.centos /etc/systemd/system/netperf-dashboard.service
 else
@@ -203,9 +208,16 @@ systemctl daemon-reload
 systemctl enable netperf-dashboard
 
 # copy the database systemd unit file and enable the service
+printf "Installing systemd unit file for the database daemon...\n"
 cp /opt/netperf/config/systemd/netperf-db.service /etc/systemd/system
 systemctl daemon-reload
 systemctl enable netperf-db
+
+# copy the interface configuration systemd unit file
+printf "Installing systemd unit file for the interface configuration script...\n"
+cp /opt/netperf/config/systemd/netperf-interfaces.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable netperf-interfaces
 
 # save the settings to the configuration file:
 python3 "$CONFIG_APP" --set data_root --value "$data_root"
@@ -222,8 +234,13 @@ fi
 ln -s "$report_path" /opt/netperf/dashboard/html/reports
 
 if [[ "$OS_ID" == centos ]]; then
-	# set SELinux context for linked reports directory
-	chcon -v --type=httpd_sys_content_t /opt/netperf/dashboard/html/reports/*
+	sel_enforced=$( selinux_enforced )
+	if [[ "$sel_enforced" == true ]]; then
+		printf "Setting SELinux context for reports directory...\n"
+		# set SELinux context for reports directory - allows NGINX to serve PDF report files
+		semanage fcontext -a -t httpd_sys_content_t "${report_path}(/.*)?"
+		restorecon -R "$report_path" > /dev/null
+	fi
 fi
 
 # detect which speedtest client is installed:
@@ -235,7 +252,7 @@ else
 	if [[ "$ookla_installed" == true ]]; then
 		speedtest_client="ookla"
 	else
-		echo "Error: a speedtest client is not installed. Please run the package installer script."
+		printf "Error: a speedtest client is not installed. Please run the package installer script.\n"
 		exit 1
 	fi
 fi

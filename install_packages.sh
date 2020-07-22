@@ -26,6 +26,12 @@ if [[ "$os_id" == "centos" ]]; then
 	printf "Enabling PowerTools repository...\n"
 	dnf config-manager --set-enabled PowerTools
 	os_packages=("${centos_os_packages[@]}")
+	# check if SELinux is enforced on this system
+	sel_enforced=$( selinux_enforced )
+	if [[ "$sel_enforced" == true ]]; then
+		# add package that contains the 'semanage' tool
+		os_packages+=( policycoreutils-python-utils )
+	fi
 else
 	if [[ "$os_id" == "raspbian" ]]; then
 		os_packages=("${raspbian_os_packages[@]}")
@@ -99,7 +105,7 @@ do
 		package_installed=false
 		for i in {1..3}
 		do
-			printf "	Installing package $os_package...\n\n"
+			printf "	Installing package $os_package...\n"
 			install_os_package "$os_package" > /dev/null
 			# check that the package is now installed
 			result=$( os_package_installed "$os_package" )

@@ -1,0 +1,12 @@
+[Unit]
+Description = Network Performance Monitor Interface Configuration
+After = network.target
+
+[Service]
+Type=forking
+ExecStartPre = /opt/netperf/tools/fix_log.sh
+ExecStart = /usr/bin/python3 /opt/netperf/configure_interfaces.py
+RemainAfterExit=no
+
+[Install]
+WantedBy = multi-user.target
