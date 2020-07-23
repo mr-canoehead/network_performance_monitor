@@ -83,7 +83,7 @@ else
 			DEB_DISTRO=$(lsb_release -sc)
 			sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$INSTALL_KEY"
 			echo "deb https://ookla.bintray.com/debian ${DEB_DISTRO} main" | sudo tee  /etc/apt/sources.list.d/speedtest.list > /dev/null
-			apt_packages+=( gnupg1 apt-transport-https dirmngr speedtest)
+			os_packages+=( gnupg1 apt-transport-https dirmngr speedtest)
 		fi
 	fi
 fi

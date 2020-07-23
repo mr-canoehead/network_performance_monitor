@@ -152,19 +152,17 @@ until [[ "$port_accepted" == true ]]; do
 done
 
 if [[ "$OS_ID" == "raspbian" ]]; then
-	SITE_CONFIG=/etc/nginx/sites-available
 	# copy the dashboard website configuration file
-	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
-	ln -s /etc/nginx/sites-available/netperf-dashboard "$SITE_CONFIG"
+	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/sites-available
+	ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netperf-dashboard
 	# disable the default nginx website (it conflicts with the dashboard app website):
 	unlink /etc/nginx/sites-enabled/default
 else
 	if [[ "$OS_ID" == "centos" ]]; then
 		# copy nginx configuration file to disable the default server
 		cp /opt/netperf/dashboard/config/nginx/nginx.conf /etc/nginx/nginx.conf
-		SITE_CONFIG=/etc/nginx/conf.d/netperf-dashboard.conf
 		# copy the dashboard website configuration file
-		cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
+		cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/conf.d/netperf-dashboard.conf
 		# enable the NGINX service
 		systemctl enable nginx
 	fi
