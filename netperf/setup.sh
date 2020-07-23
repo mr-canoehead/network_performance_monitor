@@ -153,8 +153,9 @@ done
 
 if [[ "$OS_ID" == "raspbian" ]]; then
 	# copy the dashboard website configuration file
-	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/sites-available
-	ln -s /etc/nginx/sites-available/netperf-dashboard /etc/nginx/sites-enabled/netperf-dashboard
+	SITE_CONFIG="/etc/nginx/sites-available/netperf-dashboard"
+	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
+	ln -s "$SITE_CONFIG" /etc/nginx/sites-enabled/netperf-dashboard
 	# disable the default nginx website (it conflicts with the dashboard app website):
 	unlink /etc/nginx/sites-enabled/default
 else
@@ -162,7 +163,8 @@ else
 		# copy nginx configuration file to disable the default server
 		cp /opt/netperf/dashboard/config/nginx/nginx.conf /etc/nginx/nginx.conf
 		# copy the dashboard website configuration file
-		cp /opt/netperf/dashboard/config/nginx/netperf-dashboard /etc/nginx/conf.d/netperf-dashboard.conf
+		SITE_CONFIG="/etc/nginx/conf.d/netperf-dashboard.conf"
+		cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
 		# enable the NGINX service
 		systemctl enable nginx
 	fi
@@ -171,8 +173,11 @@ fi
 if [[ "$port" != "80" ]]; then
 		# edit nginx site configuration file to change port
 		sedcmd="s/listen 80 default_server/listen $port default_server/g;s/listen \[::\]:80 default_server/listen \[::\]:$port default_server/g"
-		sed -i "$sedcmd" "$NGINX_CONFIG"
+		sed -i "$sedcmd" "$SITE_CONFIG"
 fi
+
+# restart the NGINX service to start serving the new site config
+systemctl restart nginx
 
 if [[ "$OS_ID" == "centos" ]]; then
 	# if firewall is active add exceptions for http and iperf3
