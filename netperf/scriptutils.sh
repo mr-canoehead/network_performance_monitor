@@ -115,7 +115,7 @@ function pip_package_installed (){
 
 function install_pip_package (){
 	local pip_package="$1"
-	pip3 install "$pip_package"
+	pip3 install "$pip_package" > /dev/null 2>&1
 	if [[ "$?" -eq 0 ]]; then
 		printf "ok"
 	else

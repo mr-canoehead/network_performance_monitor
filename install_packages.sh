@@ -105,18 +105,18 @@ do
 		package_installed=false
 		for i in {1..3}
 		do
-			printf "	Installing package $os_package...\n"
+			printf "	Installing package $os_package... "
 			install_os_package "$os_package" > /dev/null
 			# check that the package is now installed
 			result=$( os_package_installed "$os_package" )
 			if [[ "$result" == true ]]; then
-				printf "	$os_package is installed\n"
+				printf " done.\n"
 				package_installed=true
 				break
 			fi
 		done
 		if [[ "$package_installed" == "false" ]]; then
-			printf "	Failed to install package $os_package\n"
+			printf " error, installation failed.\n"
 			all_packages_installed=false
 		fi
 	fi
@@ -133,18 +133,18 @@ do
 		package_installed=false
 		for i in {1..3}
 		do
-			printf "	Installing pip package $pip_package...\n\n"
+			printf "	Installing pip package $pip_package..."
 			install_pip_package "$pip_package" > /dev/null
 			# check that the package is now installed
 			installed=$( pip_package_installed "$pip_package" )
 			if [[ "$installed" == true ]]; then
-				echo "	$pip_package is installed"
+				printf " done.\n"
 				package_installed=true
 				break
 			fi
 		done
 		if [[ "$package_installed" == "false" ]]; then
-			echo "	Failed to install pip package $pip_package"
+			echo "	error, installation failed.\n"
 			all_packages_installed=false
 		fi
 	fi
