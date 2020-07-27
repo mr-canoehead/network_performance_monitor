@@ -222,11 +222,6 @@ cp /opt/netperf/config/systemd/netperf-interfaces.service /etc/systemd/system
 systemctl daemon-reload
 systemctl enable netperf-interfaces
 
-# disable the wpa_supplicant service on Raspberry Pi OS installations
-if [[ "$OS_ID" == "raspbian" ]]; then
-	 systemctl disable wpa_supplicant
-fi
-
 # save the settings to the configuration file:
 python3 "$CONFIG_APP" --set data_root --value "$data_root"
 python3 "$CONFIG_APP" --set data_usage_quota_GB --value "$data_usage_quota_GB"

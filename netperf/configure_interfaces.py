@@ -11,6 +11,7 @@ import os
 import json
 import sys
 import logging
+import time
 from netperf_settings import netperf_settings
 
 class bcolors:
@@ -189,6 +190,7 @@ for interface in network_interfaces:
 		critical_error("Unble to add default gateway for interface " + interface)
 	if if_details['type'] == "wireless":
 		print("Connecting interface to its wireless network")
+		time.sleep(2)
 		wpa_supplicant_prefix = "wpa_supplicant_" + interface
 		exit_code = os.system(cmd_prefix+ "/sbin/wpa_supplicant -B -P /run/" + wpa_supplicant_prefix + ".pid   -c " + if_details["wpa_supplicant_config"] + " -i " + interface)
 		if exit_code != 0:
