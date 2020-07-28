@@ -38,7 +38,7 @@ else
 fi
 
 # create the initial wpa_supplicant config file for the interface
-printf "ctrl_interface=DIR=/var/run/wpa_supplicant\nupdate_config=1" | tee "$WPA_SUPPLICANT_FILE" > /dev/null
+printf "ctrl_interface=DIR=/var/run/netperf/wpa_supplicant\nupdate_config=1" | tee "$WPA_SUPPLICANT_FILE" > /dev/null
 
 # start wpa_supplicant daemon for the interface
 echo "Starting wpa_supplicant daemon for $INTERFACE..."
