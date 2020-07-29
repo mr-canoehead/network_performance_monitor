@@ -2,6 +2,18 @@
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
+if [[ ! -f /opt/netperf/scriptutils.sh ]]; then
+	printf "Can't find a required file.\nPlease copy the project files to /opt/netperf before running this script.\ne.g.:\nsudo cp -R network_performance_monitor/netperf /opt/netperf\n\n"
+	exit 1
+fi
+
+# check that the script is being run as root
+if [[ $EUID -ne 0 ]]; then
+	echo "This script must be run as root, e.g:"
+	echo "sudo ./$(basename $0)"
+	exit 1
+fi
+
 source /opt/netperf/scriptutils.sh
 
 raspbian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib iperf3 \
@@ -11,6 +23,10 @@ raspbian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib i
 centos_os_packages=( epel-release gcc sqlite python3-daemon python3-matplotlib python36-devel iperf3 \
                      bind-utils iw wpa_supplicant bc nginx python3-gunicorn python3-pip libqhull texlive-latex \
                      texlive-collection-latexrecommended texlive-titlesec )
+
+fedora_os_packages=( gcc sqlite python3-daemon python3-matplotlib python3-devel iperf3 \
+                     bind-utils iw wpa_supplicant bc nginx python3-gunicorn python3-pip libqhull texlive-latex \
+                     texlive-collection-latexrecommended texlive-titlesec newt cronie cronie-anacron )
 
 pip_packages=( posix_ipc flask flask-socketio eventlet requests )
 
@@ -33,11 +49,20 @@ if [[ "$os_id" == "centos" ]]; then
 		os_packages+=( policycoreutils-python-utils )
 	fi
 else
-	if [[ "$os_id" == "raspbian" ]]; then
-		os_packages=("${raspbian_os_packages[@]}")
+	if [[ "$os_id" == "fedora" ]]; then
+		os_packages=("${fedora_os_packages[@]}")
+		sel_enforced=$( selinux_enforced )
+		if [[ "$sel_enforced" == true ]]; then
+			# add package that contains the 'semanage' tool
+			os_packages+=( policycoreutils-python-utils )
+		fi
 	else
-		printf "Unsupported operating system: $os_od\n"
-		exit 1
+		if [[ "$os_id" == "raspbian" ]]; then
+			os_packages=("${raspbian_os_packages[@]}")
+		else
+			printf "Unsupported operating system: $os_od\n"
+			exit 1
+		fi
 	fi
 fi
 
@@ -66,7 +91,7 @@ else
 		printf "Removing speedtest-cli client...\n"
 		remove_pip_package speedtest-cli > /dev/null
 	fi
-	if [[ "$os_id" == "centos" ]]; then
+	if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
 		printf "Adding Ookla repository...\n"
 		package_installed=$( os_package_installed wget )
 		if [[ "$package_installed" == false ]]; then

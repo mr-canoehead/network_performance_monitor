@@ -13,7 +13,7 @@ function os_package_installed (){
         local result=false
         local retcode=1
         if [[ "$os_package" != "" ]]; then
-                if [[ "$os_id" == "centos" ]]; then
+                if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
                         rpm -q "$os_package" > /dev/null 2>&1
                         if [[ "$?" -eq 0 ]]; then
                                 result=true
@@ -42,7 +42,7 @@ function install_os_package (){
 	local os_id=$( get_os_id )
 	local return_code
 	local result="ok"
-	if [[ "$os_id" == "centos" ]]; then
+	if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
 		dnf install -y "$os_package" > /dev/null 2>&1
 		return_code="$?"
 	else
@@ -68,7 +68,7 @@ function remove_os_package (){
 	local os_id=$( get_os_id )
 	local return_code
 	local result="ok"
-	if [[ "$os_id" == "centos" ]]; then
+	if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
 		sudo dnf remove -y "$os_package" > /dev/null 2>&1
 		return_code="$?"
 	else
@@ -91,7 +91,7 @@ function remove_os_package (){
 
 function update_repository_cache (){
         local os_id=$( get_os_id )
-        if [[ "$os_id" == "centos" ]]; then
+        if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
                 dnf check-update > /dev/null
         else
                 if [[ "$os_id" == "raspbian" ]]; then

@@ -13,7 +13,7 @@ TITLE="Network Performance Monitor Configuration"
 CONFIG_APP="/opt/netperf/netperf_settings.py"
 OS_ID=$( get_os_id )
 
-if [[ ! "$OS_ID" =~ ^(raspbian|centos)$ ]]; then
+if [[ ! "$OS_ID" =~ ^(raspbian|centos|fedora)$ ]]; then
 	printf "Unsupported operating system: $OS_ID\n"
 	exit 1
 fi
@@ -159,7 +159,7 @@ if [[ "$OS_ID" == "raspbian" ]]; then
 	# disable the default nginx website (it conflicts with the dashboard app website):
 	unlink /etc/nginx/sites-enabled/default
 else
-	if [[ "$OS_ID" == "centos" ]]; then
+	if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 		# copy nginx configuration file to disable the default server
 		cp /opt/netperf/dashboard/config/nginx/nginx.conf /etc/nginx/nginx.conf
 		# copy the dashboard website configuration file
@@ -179,7 +179,13 @@ fi
 # restart the NGINX service to start serving the new site config
 systemctl restart nginx
 
-if [[ "$OS_ID" == "centos" ]]; then
+if [[ "$OS_ID" == "fedora" ]]; then
+	systemctl enable crond
+	systemctl start crond
+fi
+
+
+if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	# if firewall is active add exceptions for http and iperf3
 	fw_active=$( firewalld_active )
 	if [[ "$fw_active" == true ]]; then
@@ -202,7 +208,7 @@ fi
 
 # copy the dashboard systemd unit file and enable the service
 printf "Installing systemd unit file for the dashboard application...\n"
-if [[ "$OS_ID" == "centos" ]]; then
+if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.centos /etc/systemd/system/netperf-dashboard.service
 else
 	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.raspbian /etc/systemd/system/netperf-dashboard.service
@@ -236,7 +242,7 @@ fi
 # link the reports directory to the dashboard html directory:
 ln -s "$report_path" /opt/netperf/dashboard/html/reports
 
-if [[ "$OS_ID" == centos ]]; then
+if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	sel_enforced=$( selinux_enforced )
 	if [[ "$sel_enforced" == true ]]; then
 		printf "Setting SELinux context for reports directory...\n"
