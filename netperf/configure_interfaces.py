@@ -11,7 +11,6 @@ import os
 import json
 import sys
 import logging
-import time
 from netperf_settings import netperf_settings
 
 class bcolors:
@@ -25,6 +24,7 @@ IF_INFO_PATH="/sys/class/net"
 # JSON file containing interface configuration info
 CONFIG_PATH="/opt/netperf/config"
 INTERFACES_FILE=CONFIG_PATH + "/interfaces.json"
+RUN_PATH="/run/netperf"
 FORCE_CONFIGURE = False
 DISABLE_CONFIGURE = False
 NETPERF_SETTINGS = netperf_settings()
@@ -190,15 +190,14 @@ for interface in network_interfaces:
 		critical_error("Unble to add default gateway for interface " + interface)
 	if if_details['type'] == "wireless":
 		print("Connecting interface to its wireless network")
-		time.sleep(2)
-		wpa_supplicant_prefix = "wpa_supplicant_" + interface
-		exit_code = os.system(cmd_prefix+ "/sbin/wpa_supplicant -B -P /run/" + wpa_supplicant_prefix + ".pid   -c " + if_details["wpa_supplicant_config"] + " -i " + interface)
+		wpa_supplicant_prefix = "wpa_supplicant-" + interface
+		exit_code = os.system(cmd_prefix+ "/sbin/wpa_supplicant -B -P " + RUN_PATH + "/" + wpa_supplicant_prefix + ".pid   -c " + if_details["wpa_supplicant_config"] + " -i " + interface)
 		if exit_code != 0:
 			critical_error("Unble to connect interface " + interface + " to the wireless network")
 
-	os.system (cmd_prefix + "/usr/sbin/sshd -o PidFile=/run/sshd-" + interface + ".pid")
+	os.system (cmd_prefix + "/usr/sbin/sshd -o PidFile=" + RUN_PATH + "/sshd-" + interface + ".pid")
 	print ("Starting iperf3 server daemon in " + if_details['namespace'] + " namespace")
-	os.system(cmd_prefix + "/usr/bin/iperf3 -D -s -i 1 --pidfile /run/iperf3_" + interface + ".pid > /tmp/" + interface + "_iperf3.log")
+	os.system(cmd_prefix + "/usr/bin/iperf3 -D -s -i 1 --pidfile " + RUN_PATH + "/iperf3-" + interface + ".pid > /tmp/" + interface + "_iperf3.log")
 	os.system("/bin/sed -i " +"\"/" + if_details['alias'] + "/d\"" + " /etc/hosts")
 	print ("Adding interface alias to /etc/hosts:")
 	with open("/etc/hosts","a") as hosts_file:

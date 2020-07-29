@@ -7,15 +7,16 @@
 # scanning for wireless networks, selecting a SSID, and entering a passphrase.
 # The output of this script is a wpa_supplicant configuration file for the interface.
 
-INTERFACE="$1"
-WPA_SUPPLICANT_PATH="/etc/wpa_supplicant"
-#WPA_SUPPLICANT_FILENAME="$2"
+COUNTRY_CODE="$1"
+INTERFACE="$2"
+WPA_SUPPLICANT_PATH="/opt/netperf/config/wpa_supplicant"
 WPA_SUPPLICANT_FILE="$WPA_SUPPLICANT_PATH/$INTERFACE.conf"
+CTRL_INTERFACE_PATH="/var/run/netperf/wpa_supplicant"
 TITLE="Wireless network configuration"
 
 # check command line parameters
-if [[ "$#" -ne 1 ]]; then
-	echo "Usage: $(basename $0) <interface_name>"
+if [[ "$#" -ne 2 ]]; then
+	echo "Usage: $(basename $0) <wifi_country_code> <interface_name>"
 	exit 0
 fi
 if [[ ! -d "/sys/class/net/$INTERFACE" ]]; then
@@ -27,18 +28,21 @@ if [[ ! -d "/sys/class/net/$INTERFACE/phy80211" ]]; then
 	exit 1
 fi
 
+mkdir -p "$WPA_SUPPLICANT_PATH"
+mkdir -p "$CTRL_INTERFACE_PATH"
+
 # check if wpa_supplicant daemon is already running for the interface
-if [[ -e "/run/wpa_supplicant/$INTERFACE" ]]; then
+if [[ -e "${CTRL_INTERFACE_PATH}/$INTERFACE" ]]; then
 	echo "wpa_supplicant daemon is running for $INTERFACE, shutting it down..."
 	# shut down wpa_supplicant for the interface
-	wpa_cli -i $INTERFACE terminate > /dev/null
+	wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" terminate > /dev/null
 	sleep 3
 else
 	echo "wpa_supplicant daemon is not running for $INTERFACE"
 fi
 
 # create the initial wpa_supplicant config file for the interface
-printf "ctrl_interface=DIR=/var/run/wpa_supplicant\nupdate_config=1" | tee "$WPA_SUPPLICANT_FILE" > /dev/null
+printf "ctrl_interface=DIR=${CTRL_INTERFACE_PATH}\nupdate_config=1\ncountry=${COUNTRY_CODE}" | tee "$WPA_SUPPLICANT_FILE" > /dev/null
 
 # start wpa_supplicant daemon for the interface
 echo "Starting wpa_supplicant daemon for $INTERFACE..."
@@ -46,14 +50,14 @@ wpa_supplicant -B -c "$WPA_SUPPLICANT_FILE" -i "$INTERFACE" > /dev/null
 sleep 5
 
 # add a network
-network_id=$(wpa_cli -i "$INTERFACE" add_network)
+network_id=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" add_network)
 
 associated=false
 skip_interface=false
 until [[ "$associated" == true ]] || [[ "$skip_interface" == true ]]
 do
 	# scan for wireless networks
-	result=$(wpa_cli -i "$INTERFACE" scan > /dev/null)
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" scan > /dev/null)
 
 	# show progress gauge while the scan runs in the background, wait 5 seconds to allow time for it to complete before accessing the scan results
 	PCT=0
@@ -67,7 +71,7 @@ do
 	) | whiptail --title "$TITLE" --gauge "Scanning for wireless networks using interface $INTERFACE..." 8 60 0
 
 	# read list of wireless networks detected during scan, build menu choice list
-	wireless_networks=$(wpa_cli -i "$INTERFACE" scan_results | column -t | awk '{$1=""; $4="" ; if (NR>1) {print}}' | sed -e 's/^[ \t]*//;/^$/d' | sort -nrk 2)
+	wireless_networks=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" scan_results | column -t | awk '{$1=""; $4="" ; if (NR>1) {print}}' | sed -e 's/^[ \t]*//;/^$/d' | sort -nrk 2)
 	if [[ $? -ne 0 ]]; then
 		echo "Unable to scan wireless networks using interface $INTERFACE"
 		exit 1
@@ -95,14 +99,16 @@ do
 		continue
 	fi
 
-	result=$(wpa_cli -i "$INTERFACE" set_network "$network_id" ssid \"$ssid\")
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" ssid \"$ssid\")
+	#printf "Setting network SSID: $result\n"
 	#OK/FAIL
 	psk=$(whiptail --passwordbox "Enter the password for wireless network $ssid" 8 78 --nocancel --title "$TITLE" 3>&1 1>&2 2>&3)
 	#OK/FAIL
-	result=$(wpa_cli -i "$INTERFACE" set_network "$network_id" psk \"$psk\")
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" psk \"$psk\")
+	#printf "Setting network password: $result\n"
 	#OK/FAIL
-	result=$(wpa_cli -i "$INTERFACE" enable_network "$network_id")
-
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" enable_network "$network_id")
+	#printf "Enabling network: $result\n"
 
 	# show a progress gauge while we wait 10 seconds for the wireless interface to associate with the network
 	PCT=0
@@ -115,7 +121,7 @@ do
 		done;
 	) | whiptail --title "$TITLE" --gauge "Connecting to wireless network $ssid..." 7 60 0
 
-	result=$(wpa_cli -i "$INTERFACE" status | grep "wpa_state=COMPLETED")
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" status | grep "wpa_state=COMPLETED")
 	if [[ $? == 0 ]]; then
 		whiptail --title "$TITLE" --msgbox "Successfully connected wireless interface $INTERFACE to the network $ssid.\nNetwork information will be saved in the file: $WPA_SUPPLICANT_FILE" 10 60 3>&1 1>&2 2>&3
 		associated=true
@@ -131,4 +137,4 @@ do
 done
 
 # save network configuration to wpa_supplicant file
-result=$(wpa_cli -i "$INTERFACE" save_config > /dev/null)
+result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" save_config > /dev/null)

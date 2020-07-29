@@ -7,6 +7,7 @@ NET_INFO_PATH="/sys/class/net/"
 pingtest_retcode_file="/tmp/pingtest.retcode"
 TITLE="Network Performance Monitor Configuration"
 APPLICATION_PATH="/opt/netperf"
+WPA_SUPPLICANT_PATH="/opt/netperf/config/wpa_supplicant"
 OUTPUT_FILE="$APPLICATION_PATH/config/interfaces.json"
 
 ###### Supporting Functions
@@ -32,6 +33,23 @@ function pingtest() {
 	echo $? > /tmp/pingtest.retcode
 }
 
+function ask_wifi_country () {
+        local country_code_accepted=false
+        until [[ "$country_code_accepted" == true ]]; do
+                oldIFS="$IFS"
+                IFS="/"
+                local menuitems=$(cat /usr/share/zoneinfo/iso3166.tab | tail -n +26 | tr '\t' '/' | tr '\n' '/')
+                local country_code=$(whiptail --title "$TITLE" --menu "Choose the Country/Region where this system will operate. Country/Region selection affects which WiFi frequences may be used; your selection should match the Country/Region setting on your router." --nocancel 30 60 18 ${menuitems} 3>&1 1>&2 2>&3)
+                IFS="$oldIFS"
+                whiptail --title "$TITLE" --yesno --yes-button "Ok" --no-button "Back" "Confirm selected country code: $country_code" 8 60 3>&1 1>&2 2>&3
+                if [[ "$?" -ne 0 ]]; then
+                        continue
+                else
+                        country_code_accepted=true
+                fi
+        done
+        printf "$country_code"
+}
 
 ##### Start of the main script
 
@@ -301,9 +319,10 @@ do
 	if [ "${interface_types[$s]}" == "wireless" ]; then
 		if [[ "$show_wifi_config_msg" == true ]]; then
 			whiptail --title "$TITLE" --msgbox "The script will now connect the wireless interfaces to their respective wireless networks. You will be prompted to select a wireless network and to enter the corresponding passphrase for each network." 12 60 3>&1 1>&2 2>&3
+			wifi_country_code=$( ask_wifi_country )
 			show_wifi_config_msg=false
 		fi
-		$APPLICATION_PATH/setup_wifi.sh "$s"
+		$APPLICATION_PATH/setup_wifi.sh "$wifi_country_code" "$s"
 	fi
 done
 
@@ -317,7 +336,7 @@ do
 	echo "		\"$i\" : {" >> $OUTPUT_FILE
 	echo "			\"type\" : \"${interface_types[$i]}\"," >> $OUTPUT_FILE
 	if [[ "${interface_types[$i]}" == "wireless" ]]; then
-		echo "			\"wpa_supplicant_config\" : \"/etc/wpa_supplicant/$i.conf\"," >> $OUTPUT_FILE
+		echo "			\"wpa_supplicant_config\" : \"${WPA_SUPPLICANT_PATH}/$i.conf\"," >> $OUTPUT_FILE
 	fi
 	echo "			\"ipv4_addr\" : \"${interface_ipv4_addrs[$i]}\"," >> $OUTPUT_FILE
 	echo "			\"ipv4_gw\" : \"${ipv4_gw[$i]}\"," >> $OUTPUT_FILE
