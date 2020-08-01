@@ -46,7 +46,7 @@ function install_os_package (){
 		dnf install -y "$os_package" > /dev/null 2>&1
 		return_code="$?"
 	else
-		if [[ "$os_id" == "raspbian" ]]; then
+		if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
 			apt install -y "$os_package" > /dev/null 2>&1
 			return_code="$?"
 		else
@@ -72,7 +72,7 @@ function remove_os_package (){
 		sudo dnf remove -y "$os_package" > /dev/null 2>&1
 		return_code="$?"
 	else
-		if [[ "$os_id" == "raspbian" ]]; then
+		if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
 			sudo apt remove -y "$os_package" > /dev/null 2>&1
 			return_code="$?"
 		else
@@ -94,7 +94,7 @@ function update_repository_cache (){
         if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
                 dnf check-update > /dev/null
         else
-                if [[ "$os_id" == "raspbian" ]]; then
+                if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
                         apt update > /dev/null
                 fi
         fi
@@ -142,4 +142,9 @@ function firewalld_active (){
 		active=true
 	fi
 	printf "$active"
+}
+
+function firewalld_default_zone (){
+	local default_zone=$( firewall-cmd --get-default-zone )
+	printf "$default_zone"
 }

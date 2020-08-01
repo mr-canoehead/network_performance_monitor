@@ -20,6 +20,9 @@ raspbian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib i
                        dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
                        bc nginx gunicorn3 python3-pip)
 
+debian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib iperf3 dnsutils texlive-latex-recommended texlive-latex-extra \
+                     iw wpasupplicant bc nginx gunicorn3 python3-pip )
+
 centos_os_packages=( epel-release gcc sqlite python3-daemon python3-matplotlib python36-devel iperf3 \
                      bind-utils iw wpa_supplicant bc nginx python3-gunicorn python3-pip libqhull texlive-latex \
                      texlive-collection-latexrecommended texlive-titlesec )
@@ -60,8 +63,12 @@ else
 		if [[ "$os_id" == "raspbian" ]]; then
 			os_packages=("${raspbian_os_packages[@]}")
 		else
-			printf "Unsupported operating system: $os_od\n"
-			exit 1
+                        if [[ "$os_id" == "debian" ]]; then
+                                os_packages=("${debian_os_packages[@]}")
+                        else
+                                printf "Unsupported operating system: $os_od\n"
+                                exit 1
+                        fi
 		fi
 	fi
 fi
@@ -102,13 +109,14 @@ else
 		mv bintray-ookla-rhel.repo /etc/yum.repos.d/ > /dev/null 2>&1
 		os_packages+=( speedtest )
 	else
-		if [[ "$os_id" == "raspbian" ]]; then
+		if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
 			printf "Adding Ookla repository...\n"
 			INSTALL_KEY=379CE192D401AB61
 			DEB_DISTRO=$(lsb_release -sc)
+			install_os_package gnupg1 > /dev/null
 			sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$INSTALL_KEY"
 			echo "deb https://ookla.bintray.com/debian ${DEB_DISTRO} main" | sudo tee  /etc/apt/sources.list.d/speedtest.list > /dev/null
-			os_packages+=( gnupg1 apt-transport-https dirmngr speedtest)
+			os_packages+=( apt-transport-https dirmngr speedtest)
 		fi
 	fi
 fi

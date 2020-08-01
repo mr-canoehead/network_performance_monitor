@@ -13,7 +13,7 @@ TITLE="Network Performance Monitor Configuration"
 CONFIG_APP="/opt/netperf/netperf_settings.py"
 OS_ID=$( get_os_id )
 
-if [[ ! "$OS_ID" =~ ^(raspbian|centos|fedora)$ ]]; then
+if [[ ! "$OS_ID" =~ ^(raspbian|debian|centos|fedora)$ ]]; then
 	printf "Unsupported operating system: $OS_ID\n"
 	exit 1
 fi
@@ -151,13 +151,16 @@ until [[ "$port_accepted" == true ]]; do
 		fi
 done
 
-if [[ "$OS_ID" == "raspbian" ]]; then
+if [[ "$OS_ID" == "raspbian" || "$OS_ID" == "debian" ]]; then
 	# copy the dashboard website configuration file
 	SITE_CONFIG="/etc/nginx/sites-available/netperf-dashboard"
 	cp /opt/netperf/dashboard/config/nginx/netperf-dashboard "$SITE_CONFIG"
 	ln -s "$SITE_CONFIG" /etc/nginx/sites-enabled/netperf-dashboard
 	# disable the default nginx website (it conflicts with the dashboard app website):
-	unlink /etc/nginx/sites-enabled/default
+	default_site_config="/etc/nginx/sites-enabled/default"
+	if [[ -L "$default_site_config" ]]; then
+		unlink "$default_site_config"
+	fi
 else
 	if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 		# copy nginx configuration file to disable the default server
@@ -189,12 +192,13 @@ if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	# if firewall is active add exceptions for http and iperf3
 	fw_active=$( firewalld_active )
 	if [[ "$fw_active" == true ]]; then
+		default_zone=$( firewalld_default_zone )
 		# allow http connections
 		printf "Opening port $port/tcp for the web server...\n"
-		firewall-cmd --zone=public --permanent --add-port="$port"/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port="$port"/tcp
 		# allow iperf3 connections
 		printf "Opening port 5201/tcp for iperf3 connections...\n"
-		firewall-cmd --zone=public --permanent --add-port=5201/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=5201/tcp
 		printf "Reloading firewall rules...\n"
 		firewall-cmd --reload
 	fi
@@ -240,7 +244,10 @@ if [[ ! -d "$report_path" ]]; then
 fi
 
 # link the reports directory to the dashboard html directory:
-ln -s "$report_path" /opt/netperf/dashboard/html/reports
+report_link_path="/opt/netperf/dashboard/html/reports"
+if [[ ! -L "report_link_path" ]]; then
+	ln -s "$report_path" "$report_link_path"
+fi
 
 if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	sel_enforced=$( selinux_enforced )
