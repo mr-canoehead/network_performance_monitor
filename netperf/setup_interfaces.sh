@@ -320,6 +320,10 @@ do
 		if [[ "$show_wifi_config_msg" == true ]]; then
 			whiptail --title "$TITLE" --msgbox "The script will now connect the wireless interfaces to their respective wireless networks. You will be prompted to select a wireless network and to enter the corresponding passphrase for each network." 12 60 3>&1 1>&2 2>&3
 			wifi_country_code=$( ask_wifi_country )
+			command -v rfkill > /dev/null
+			if [[ "$?" -eq 0 ]]; then
+			        rfkill unblock wifi > /dev/null
+			fi
 			show_wifi_config_msg=false
 		fi
 		$APPLICATION_PATH/setup_wifi.sh "$wifi_country_code" "$s"

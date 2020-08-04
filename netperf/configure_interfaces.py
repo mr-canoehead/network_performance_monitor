@@ -11,7 +11,9 @@ import os
 import json
 import sys
 import logging
+import shutil
 from netperf_settings import netperf_settings
+
 
 class bcolors:
 	FAIL = '\033[91m'
@@ -189,6 +191,9 @@ for interface in network_interfaces:
 	if exit_code != 0:
 		critical_error("Unble to add default gateway for interface " + interface)
 	if if_details['type'] == "wireless":
+		command_path=shutil.which("rfkill")
+		if command_path is not None:
+			os.system("{} unblock wifi".format(command_path))
 		print("Connecting interface to its wireless network")
 		wpa_supplicant_prefix = "wpa_supplicant-" + interface
 		exit_code = os.system(cmd_prefix+ "/sbin/wpa_supplicant -B -P " + RUN_PATH + "/" + wpa_supplicant_prefix + ".pid   -c " + if_details["wpa_supplicant_config"] + " -i " + interface)
