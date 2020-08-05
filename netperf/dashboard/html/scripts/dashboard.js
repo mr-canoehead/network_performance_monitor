@@ -1057,7 +1057,7 @@ socket.on('report_list', function(msg){
 		msg.forEach(addReportLink);
 	}
 	else{
-		reportFilesMessage.innerHTML = "There are no report files available. To generate a report, refer to the page <a href=\"https://github.com/mr-canoehead/network_performance_monitor/wiki/Generating-daily-reports\">Generating daily reports</a> in the project Wiki.";
+		reportFilesMessage.innerHTML = "There are no report files available. To generate a report, refer to the page <a href=\"https://github.com/mr-canoehead/network_performance_monitor/wiki/Generate-daily-reports\">Generate daily reports</a> in the project Wiki.";
 		reportFilesContainer.innerHTML = "";
 	}
 });
