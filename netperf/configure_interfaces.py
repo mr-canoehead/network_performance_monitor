@@ -122,6 +122,10 @@ for interface in network_interfaces:
 	if not os.path.exists(IF_INFO_PATH + "/" + interface):
 		critical_error("Can't find interface " + interface + " in " + IF_INFO_PATH + ". Double-check the configuration at the top of this script.")
 
+	if 'namespace' not in if_details:
+		if_details['namespace'] = "root"
+		print(interface + " has no configured namespace, defaulting to 'root')
+		
 	if if_details['type'] == 'wireless':
 		if not os.path.exists(IF_INFO_PATH + "/" + interface + "/phy80211"):
 			critical_error(interface + " does not appear to be a wireless network interface, please verify the interface configuration file.")
