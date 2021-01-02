@@ -59,58 +59,7 @@ do
 	# scan for wireless networks
 	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" scan > /dev/null)
 
-	# show progress gauge while the scan runs in the background, wait 5 seconds to allow time for it to complete before accessing the scan results
-	PCT=0
-	(
-		while [[ $PCT != 100 ]];
-		do
-			PCT=`expr $PCT + 20`;
-			echo $PCT;
-			sleep 1;
-		done;
-	) | whiptail --title "$TITLE" --gauge "Scanning for wireless networks using interface $INTERFACE..." 8 60 0
-
-	# read list of wireless networks detected during scan, build menu choice list
-	wireless_networks=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" scan_results | column -t | awk '{$1=""; $4="" ; if (NR>1) {print}}' | sed -e 's/^[ \t]*//;/^$/d' | sort -nrk 2)
-	if [[ $? -ne 0 ]]; then
-		echo "Unable to scan wireless networks using interface $INTERFACE"
-		exit 1
-	fi
-
-	declare -a menu_choices
-
-	while read -r freq rssi ssid
-	do
-		if [[ ! -z "$ssid" ]]; then
-			# map network frequency to a descriptive label for display in the menu
-			band=$([[ "$freq" -gt 3000 ]] && echo "   5GHz" || echo " 2.4GHz")
-			menu_choices+=("$ssid" "$band")
-		fi
-	done < <(printf "${wireless_networks[@]}")
-
-	if [[ "${#menu_choices[@]}" -eq 0 ]]; then
-		whiptail --title "$TITLE" --msgbox "Unable to find wireless networks for interface $INTERFACE.\nSelect 'OK' to re-scan." 8 70 16
-		continue
-	fi
-
-	ssid=$(whiptail --title "$TITLE" --cancel-button "Re-scan" --menu "Choose a network for wireless interface $INTERFACE:" 25 90 16 "${menu_choices[@]}" 3>&1 1>&2 2>&3)
-	if [[ $? == 1 ]]; then
-		# Re-scan
-		continue
-	fi
-
-	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" ssid \"$ssid\")
-	#printf "Setting network SSID: $result\n"
-	#OK/FAIL
-	psk=$(whiptail --passwordbox "Enter the password for wireless network $ssid" 8 78 --nocancel --title "$TITLE" 3>&1 1>&2 2>&3)
-	#OK/FAIL
-	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" psk \"$psk\")
-	#printf "Setting network password: $result\n"
-	#OK/FAIL
-	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" enable_network "$network_id")
-	#printf "Enabling network: $result\n"
-
-	# show a progress gauge while we wait 10 seconds for the wireless interface to associate with the network
+	# show progress gauge while the scan runs in the background, wait 10 seconds to allow time for it to complete before accessing the scan results
 	PCT=0
 	(
 		while [[ $PCT != 100 ]];
@@ -119,20 +68,124 @@ do
 			echo $PCT;
 			sleep 1;
 		done;
+	) | whiptail --title "$TITLE" --gauge "Scanning for wireless networks using interface $INTERFACE..." 8 80 0
+
+	# get list of wireless networks detected during scan
+	wireless_networks=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" scan_results | column -t | awk '{$4="" ; if (NR>1) {print}}' | sed -e 's/^[ \t]*//;/^$/d' | sort -nrk 3)
+
+	if [[ $? -ne 0 ]]; then
+		echo "Unable to scan wireless networks using interface $INTERFACE"
+		exit 1
+	fi
+
+	declare -a menu_choices
+	declare -A ssids
+	declare -A bands
+
+	# parse the list of wireless networks, build item strings for the whiptail selection menu
+	while read -r bssid freq rssi ssid
+	do
+
+                if [[ "$ssid" == "" ]]; then
+                        ssid_text="n/a (no SSID for this network)"
+                else
+                        ssid_text="$ssid"
+                fi
+		ssids["$bssid"]="$ssid"
+
+		# map network frequency to band description
+                if [[ "$freq" -gt 900 && "$freq" -lt 1000 ]]; then
+                        band="900MHz"
+                elif [[ "$freq" -gt 2400 && "$freq" -lt 2500 ]]; then
+                        band="2.4GHz"
+                elif [[ "$freq" -gt 3600 && "$freq" -lt 3700 ]]; then
+                        band="3.65GHz"
+                elif [[ "$freq" -gt 5000 && "$freq" -lt 5900 ]]; then
+                        band="5GHz"
+                else
+			band="undefined"
+		fi
+		bands["$bssid"]="$band"
+
+		# build string value for this menu item
+                bssid_info=$(printf " %7s %5s   %-32s" "$band" "$rssi" "$ssid_text")
+                menu_choices+=("$bssid" "$bssid_info")
+	done < <(printf "${wireless_networks[@]}")
+
+	menu_height=10
+	menu_headings="       BSSID           BAND  RSSI   SSID"
+
+	# adjust menu heading indent if there's no menu scrollbar
+	if [[ "${#ssids[@]}" -le "$menu_height" ]]; then
+        	menu_headings=" $menu_headings"
+	fi
+
+	if [[ "${#menu_choices[@]}" -eq 0 ]]; then
+		whiptail --title "$TITLE" --msgbox "Unable to find wireless networks for interface $INTERFACE.\nSelect 'OK' to re-scan." 8 70 16
+		continue
+	fi
+
+	bssid=$(whiptail --title "$TITLE" --cancel-button "Re-scan" --menu "Choose a network for wireless interface $INTERFACE:\n\n$menu_headings" 20 75 "$menu_height" "${menu_choices[@]}" 3>&1 1>&2 2>&3)
+
+	if [[ $? == 1 ]]; then
+		# Re-scan
+		continue
+	fi
+
+	# set bssid for network
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" bssid "$network_id" "$bssid")
+	ssid="${ssids[$bssid]}"
+	if [[ ${#ssid} -eq 0 ]]; then
+		# hidden SSID, prompt user to enter one
+		ssid_ok=false
+		ssid_prompt="SSID is hidden for this network. Enter network SSID:"
+		until [[ "$ssid_ok" == true ]]; do
+			ssid=$(whiptail --inputbox "$ssid_prompt" --title "$TITLE" 10 60 3>&1 1>&2 2>&3)
+			if [[ "${#ssid}" -lt 2 ]] || [[ "${#ssid}" -gt 32 ]]; then
+				ssid_prompt="Invalid SSID. Please enter a valid SSID:"
+				ssid_ok=false
+			else
+				ssid_ok=true
+			fi
+		done
+		# wpa_supplicant requires scan_ssid=1 in order to connect to hidden networks
+		result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" scan_ssid 1)
+	fi
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" ssid \"$ssid\")
+
+	passphrase=$(whiptail --passwordbox "Enter the password for wireless network $ssid" 8 60 --nocancel --title "$TITLE" 3>&1 1>&2 2>&3)
+
+	# generate PSK
+	wpa_psk=$(wpa_passphrase "$ssid" "$passphrase" | sed -rn 's/^\s*psk=(.*)$/\1/p')
+
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" set_network "$network_id" psk "$wpa_psk")
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" enable_network "$network_id")
+
+	# show a progress gauge while we wait for the wireless interface to associate with the network
+	PCT=0
+	(
+		while [[ $PCT != 100 ]];
+		do
+			result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" status | sed -rn 's/^\s*wpa_state=(.*)$/\1/p')
+			if [[ "$result" == "COMPLETED" ]]; then
+				break
+			fi
+			PCT=`expr $PCT + 2`;
+			echo $PCT;
+			sleep 1;
+		done;
 	) | whiptail --title "$TITLE" --gauge "Connecting to wireless network $ssid..." 7 60 0
 
-	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" status | grep "wpa_state=COMPLETED")
-	if [[ $? == 0 ]]; then
-		whiptail --title "$TITLE" --msgbox "Successfully connected wireless interface $INTERFACE to the network $ssid.\nNetwork information will be saved in the file: $WPA_SUPPLICANT_FILE" 10 60 3>&1 1>&2 2>&3
+	result=$(wpa_cli -i "$INTERFACE" -p "$CTRL_INTERFACE_PATH" status | sed -rn 's/^\s*wpa_state=(.*)$/\1/p')
+	if [[ "$result" == "COMPLETED" ]]; then
 		associated=true
+		whiptail --title "$TITLE" --msgbox "Successfully connected wireless interface $INTERFACE to the network $ssid.\nNetwork information will be saved in the file: $WPA_SUPPLICANT_FILE" 10 60 3>&1 1>&2 2>&3
 	else
-		#whiptail --title "$TITLE" --msgbox "Unable to connect interface $INTERFACE to the wireless network $ssid. Please choose a different wireless network or double-check your password." 15 40 3>&1 1>&2 2>&3
 		whiptail --title "$TITLE" --yesno "Unable to connect interface $INTERFACE to the wireless network $ssid.\n\nPlease choose a different wireless network or double-check your password.\n\nDo you want to retry configuring the wireless network for this interface?" 13 80 3>&1 1>&2 2>&3
-	if [[ "$?" -eq 1 ]]; then
-		 whiptail --title "$TITLE" --msgbox "You will need to create a wpa_supplicant file for the interface $INTERFACE manually. Please refer to the sample configuration files in the Wiki for example wpa_supplicant files." 12 80 3>&1 1>&2 2>&3
-		skip_interface=true
+		if [[ "$?" -eq 1 ]]; then
+			whiptail --title "$TITLE" --msgbox "You will need to create a wpa_supplicant file for the interface $INTERFACE manually. Please refer to the sample configuration files in the Wiki for example wpa_supplicant files." 12 80 3>&1 1>&2 2>&3
+			skip_interface=true
 		fi
-		associated=false
 	fi
 done
 
