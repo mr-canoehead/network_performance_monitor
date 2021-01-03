@@ -142,14 +142,14 @@ def test_isp(test_exec_namespace,dbq):
 			speedtest_server_opt = "--server {}".format(speedtest_server_id)
 		else:
 			speedtest_server_opt = ""
-		cmd = "{}speedtest-cli --json {}".format(cmd_prefix,speedtest_server_opt)
+		cmd = "{}/usr/local/bin/speedtest-cli --json {}".format(cmd_prefix,speedtest_server_opt)
 	else:
 		# Ookla client
 		if speedtest_server_id is not None:
 			speedtest_server_opt = "--server-id={}".format(speedtest_server_id)
 		else:
 			speedtest_server_opt = ""
-		cmd = "{}speedtest --accept-license --format=json {}".format(cmd_prefix,speedtest_server_opt)
+		cmd = "{}/usr/bin/speedtest --accept-license --format=json {}".format(cmd_prefix,speedtest_server_opt)
 	print (cmd)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
