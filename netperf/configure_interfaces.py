@@ -55,14 +55,16 @@ def warn (warning_str):
 
 # Make sure we're running as root
 if os.geteuid() != 0:
+	print ("This script must be run as root.\nPlease try again using 'sudo'.")
 	critical_error ("This script must be run as root.\nPlease try again using 'sudo'.")
 
 # read the interface configuration JSON file
-print ("Reading interfaces file " + INTERFACES_FILE)
+configure_log.info("Network Perormance Monitor interface configuration\nReading interfaces file {}".format(INTERFACES_FILE))
 
 with open(INTERFACES_FILE,"r+") as json_file:
 	interface_info = json.load(json_file)
 	if (interface_info["configure_interfaces"] == False) and (FORCE_CONFIGURE == False):
+		configure_log.debug("Interface configuration is disabled. Nothing to do, exiting.")
 		# Nothing to do, exit
 		sys.exit(0)
 	else:
@@ -77,69 +79,88 @@ with open(INTERFACES_FILE,"r+") as json_file:
 	json_file.close()
 
 #### Configure the bandwidth monitoring bridge
-print ("Configuring the bandwidth monitoring bridge...")
 bridge_info = interface_info["bandwidth_monitor_bridge"]
 if bridge_info["configure"] == True:
+	configure_log.info("Configuring the bandwidth monitoring bridge")
 	bridge_namespace = bridge_info["namespace"]
 	bridge_name = bridge_info["bridge_name"]
 	modem_interface = bridge_info["modem_interface"]
 	router_interface = bridge_info["router_interface"]
 
 	# add network namespace for the bridge
+	configure_log.debug("adding network namespace for the bridge")
 	os.system("/sbin/ip netns add {}".format(bridge_namespace))
 	cmd_prefix = "/sbin/ip netns exec {} ".format(bridge_namespace)
 
 	# move interfaces to new namespace
-	os.system("ip link set {} netns {}".format(modem_interface,bridge_namespace))
-	os.system("ip link set {} netns {}".format(router_interface,bridge_namespace))
+	configure_log.debug("moving modem (upstream) interface {} to network namespace {}".format(modem_interface,bridge_namespace))
+	exit_code = os.system("ip link set {} netns {}".format(modem_interface,bridge_namespace))
+	if exit_code != 0:
+		configure_log.critical("failed to move interface {} to network namespace {}".format(modem_interface,bridge_namespace))
+	configure_log.debug("moving router (downstream) interface {} to network namespace {}".format(router_interface,bridge_namespace))
+	exit_code = os.system("ip link set {} netns {}".format(router_interface,bridge_namespace))
+	if exit_code != 0:
+		configure_log.critical("failed to move interface {} to network namespace {}".format(router_interface,bridge_namespace))
 
 	# create the bridge interface
+	configure_log.debug("creating bridge interface {}".format(bridge_name))
 	os.system("{} ip link add name {} type bridge".format(cmd_prefix,bridge_name))
 
 	# add network interfaces to the bridge
+	configure_log.debug("adding modem (upstream) interface {} to bridge".format(modem_interface))
 	os.system("{} ip link set {} master {}".format(cmd_prefix,modem_interface,bridge_name))
+	configure_log.debug("adding router (downstream) interface {} to bridge".format(router_interface))
 	os.system("{} ip link set {} master {}".format(cmd_prefix,router_interface,bridge_name))
 
 	# bring up the bridge interfaces
+	configure_log.debug("bringing up bridge interfaces")
 	os.system("{} ip link set {} up".format(cmd_prefix,modem_interface))
 	os.system("{} ip link set {} up".format(cmd_prefix,router_interface))
 	os.system("{} ip link set {} up".format(cmd_prefix,bridge_name))
 
 	# start the bandwidth monitoring daemon
+	configure_log.debug("starting the bandwidth monitoring daemon")
 	os.system("{} /sbin/runuser -l pi -c 'python3 /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,modem_interface))
+	configure_log.info("bandwidth monitoring bridge configuration is complete")
+else:
+	configure_log.info("Bandwidth monitoring is disabled.")
 
 #### Configure the performance testing interfaces
-print ("Configuring the performance testing interfaces...")
+configure_log.info("Configuring the performance testing interfaces")
 root_namespace_interfaces = 0
 for interface in network_interfaces:
 	if_details = network_interfaces[interface]
 
 	# check if namespace exists already (i.e. this script has already been run)
-	if os.system("/sbin/ip netns list | /bin/grep " + interface + " > /dev/null") == 0:
-		critical_error("A network namespace already exists for interface " + interface + ", please reboot if you need to reconfigure the interfaces.")
-
+	if os.system("/sbin/ip netns list | /bin/grep {} > /dev/null".format(interface)) == 0:
+		configure_log.error("Network namespace exists for interface {}, the interface has already been configured on this system.\n To reconfigure the interfaces, refer to the \"Reconfigure the network interfaces\" page of the project Wiki".format(interface))
+		sys.exit(1)
 	# check if interface exists
 	if not os.path.exists(IF_INFO_PATH + "/" + interface):
-		critical_error("Can't find interface " + interface + " in " + IF_INFO_PATH + ". Double-check the configuration at the top of this script.")
-
+		configure_log.critical("Can't find interface {} in {}".format(interface,IF_INFO_PATH))
+		sys.exit(1)
 	if if_details['type'] == 'wireless':
-		if not os.path.exists(IF_INFO_PATH + "/" + interface + "/phy80211"):
-			critical_error(interface + " does not appear to be a wireless network interface, please verify the interface configuration file.")
+		if not os.path.exists("{}/{}/phy80211".format(IF_INFO_PATH,interface)):
+			configure_log.critical("{} does not appear to be a wireless network interface, please verify the interface configuration file.".format(interface))
+			sys.exit(1)
 		else:
 			if if_details['namespace'] is not None and (if_details['namespace'] not in ("root", "default")):
 				# check if interface supports switching network namespace
-				with open('/sys/class/net/' + interface + "/phy80211/name", 'r') as file:
+				with open("/sys/class/net/{}/phy80211/name".format(interface), 'r') as file:
 					if_details['phy_name'] = file.read().replace('\n', '')
-					cmd = "/sbin/iw phy " + if_details['phy_name'] + " info | /bin/grep netns"
-					if os.system("/sbin/iw phy " + if_details['phy_name'] + " info | /bin/grep netns > /dev/null") != 0:
-							critical_error("Wireless interface " + interface + " is configured to use its own network namespace, but its driver does not support the set_wiphy_netns command required to do so. Please verify the interface configuration file.")
+					#cmd = "/sbin/iw phy {} info | /bin/grep netns".format(if_details['phy_name']))
+					if os.system("/sbin/iw phy {} info | /bin/grep netns > /dev/null".format(if_details['phy_name'])) != 0:
+						configure_log.critical("Wireless interface {} is configured to use its own network namespace, but its driver does not support the set_wiphy_netns command required to do so. Please verify the interface configuration file.".format(interface))
+						sys.exit(1)
 
 		#wpa_supplicant_config = CONFIG_PATH + "/wpa_supplicant_" + interface + ".conf"
 		if not os.path.isfile(if_details["wpa_supplicant_config"]):
-			critical_error("Missing wpa_supplicant configuration file " + if_details["wpa_supplicant_config"] + " for wireless interface " + interface)
+			configure_log.critical("Missing wpa_supplicant configuration file {} for wireless interface {}.".format(if_details["wpa_supplicant_config"],interface))
+			sys.exit(1)
 	else:
-		if os.path.exists(IF_INFO_PATH + "/" + interface + "/phy80211"):
-			critical_error(interface + " appears to be a wireless network interface, please verify the interface configuration file.")
+		if os.path.exists("{}/{}/phy80211".format(IF_INFO_PATH,interface)):
+			configure_log.critical("{} appears to be a wireless network interface, please verify the interface configuration file.".format(interface))
+			sys.exit(1)
 	if if_details['namespace'] is None:
 		root_namespace_interfaces += 1
 
@@ -151,74 +172,79 @@ if root_namespace_interfaces > 1:
 
 warn ("The network interfaces are being reconfigured, if you are connected via ssh your session will disconnect or hang.\nTo terminate a ssh session that has hung, type the key sequence <Enter><Tilde><Dot> (The 'Enter' key, then the '~' key, then the '.' key.)\nTo reconnect, ssh to one of the configured namespace IP addresses, or to the address of the interface in the root namespace.")
 
-print("Configuring interfaces for network performance monitoring:\n")
+configure_log.info("Configuring interfaces for network performance monitoring:")
 
 for interface in network_interfaces:
 	if_details = network_interfaces[interface]
-	print("Configuring " + if_details['type'] + " interface " + interface)
+	configure_log.info("Configuring {} interface {}".format(if_details['type'],interface))
 	if if_details['namespace'] is not None and (if_details['namespace'] not in ("root", "default")):
-		print("Adding network namespace " + if_details['namespace'])
-		os.system("/sbin/ip netns add " + if_details['namespace'])
-		cmd_prefix = "/sbin/ip netns exec " + if_details['namespace'] + " "
-		print("Moving interface " + interface + " to network namespace " + if_details['namespace'])
+		configure_log.debug("Adding network namespace {}".format(if_details['namespace']))
+		os.system("/sbin/ip netns add {}".format(if_details['namespace']))
+		cmd_prefix = "/sbin/ip netns exec {} ".format(if_details['namespace'])
+		configure_log.debug("Moving interface {} to network namespace {}".format(interface,if_details['namespace']))
 		if if_details['type'] == 'wireless':
 			#with open('/sys/class/net/' + interface + "/phy80211/name", 'r') as file:
     			#	phy_name = file.read().replace('\n', '')
-			exit_code = os.system("/sbin/iw phy " + if_details['phy_name'] + " set netns name " + if_details['namespace'])
+			exit_code = os.system("/sbin/iw phy {} set netns name {}".format(if_details['phy_name'],if_details['namespace']))
 			if exit_code != 0:
-				critical_error("Unable to change network namespace of wireless interface " + interface)
+				configure_log.critical("Unable to change network namespace of wireless interface {}".format(interface))
+				sys.exit(1)
 		else:
-			exit_code = os.system(" /sbin/ip link set " + interface + " netns " + if_details['namespace'])
+			exit_code = os.system("/sbin/ip link set {} netns {}".format(interface,if_details['namespace']))
 			if exit_code != 0:
-				critical_error("Can't change network namespace of ethernet interface " + interface + ", its driver may not support this function")
+				configure_log.critical("Unable to change network namespace of ethernet interface {}".format(interface))
+				sys.exit(1)
 	else:
-		print("Leaving interface in the root network namespace")
+		configure_log.debug("Leaving interface {} in the root network namespace".format(interface))
 		if_details['namespace'] = "root"
 		cmd_prefix = ""
 
-	print("Bringing up interface " + interface + " in " + if_details['namespace'])
-	exit_code = os.system(cmd_prefix + "/sbin/ip link set dev " + interface + " up")
+	configure_log.debug("Bringing up interface {} in network namespace {}".format(interface,if_details['namespace']))
+	exit_code = os.system("{} /sbin/ip link set dev {} up".format(cmd_prefix,interface))
 	if exit_code != 0:
-		critical_error("Unble to bring up interface " + interface)
+		configure_log.critical("Unble to bring up interface {}".format(interface))
+		sys.exit(1)
 
-	print("Configuring IPv4 address for interface " + interface)
-	exit_code = os.system(cmd_prefix + "/sbin/ip address add " + if_details['ipv4_addr'] + "/24 dev " + interface)
+	configure_log.debug("Configuring IPv4 address for interface {}".format(interface))
+	exit_code = os.system("{} /sbin/ip address add {}/24 dev {}".format(cmd_prefix,if_details['ipv4_addr'],interface))
 	if exit_code != 0:
-		critical_error("Unble to assign IPv4 address for interface " + interface)
+		configure_log.critical("Unable to assign IPv4 address for interface {}".format(interface))
 
-	print("Configuring IPv4 default gateway for interface " + interface)
-	exit_code = os.system(cmd_prefix + "/sbin/ip route replace default via " + if_details['ipv4_gw'] + " dev " + interface)
+	configure_log.debug("Configuring IPv4 default gateway for interface {}".format(interface))
+	exit_code = os.system("{} /sbin/ip route replace default via {} dev {}".format(cmd_prefix,if_details['ipv4_gw'],interface))
 	if exit_code != 0:
-		critical_error("Unble to add default gateway for interface " + interface)
+		configure_log.critical("Unable to add default gateway for interface {}".format(interface))
+		sys.exit(1)
 	if if_details['type'] == "wireless":
 		command_path=shutil.which("rfkill")
 		if command_path is not None:
+			configure_log.debug("Unblocking wifi interface")
 			os.system("{} unblock wifi".format(command_path))
-		print("Connecting interface to its wireless network")
-		wpa_supplicant_prefix = "wpa_supplicant-" + interface
-		exit_code = os.system(cmd_prefix+ "/sbin/wpa_supplicant -B -P " + RUN_PATH + "/" + wpa_supplicant_prefix + ".pid   -c " + if_details["wpa_supplicant_config"] + " -i " + interface)
+		configure_log.debug("Connecting interface to its wireless network")
+		wpa_supplicant_prefix = "wpa_supplicant-{}".format(interface)
+		exit_code = os.system("{} /sbin/wpa_supplicant -B -P {}/{}.pid -c {} -i {}".format(cmd_prefix,RUN_PATH,wpa_supplicant_prefix,if_details["wpa_supplicant_config"],interface))
 		if exit_code != 0:
-			critical_error("Unble to connect interface " + interface + " to the wireless network")
+			configure_log.critical("Unable to connect interface {} to its wireless network".format(interface))
+			sys.exit(1)
+	configure_log.info("Starting ssh daemon for interface {}".format(interface))
+	os.system ("{} /usr/sbin/sshd -o PidFile={}/sshd-{}.pid".format(cmd_prefix,RUN_PATH,interface))
+	configure_log.info("Starting iperf3 server daemon in netowrk namespace {}".format(if_details['namespace']))
+	os.system("{} /usr/bin/iperf3 -D -s -i 1 --pidfile {}/iperf3-{}.pid > /tmp/{}_iperf3.log".format(cmd_prefix,RUN_PATH,interface,interface))
+	#os.system("/bin/sed -i " +"\"/" + if_details['alias'] + "/d\"" + " /etc/hosts")
+	os.system("/bin/sed -i \"/{}/d\" /etc/hosts".format(if_details['alias']))
 
-	os.system (cmd_prefix + "/usr/sbin/sshd -o PidFile=" + RUN_PATH + "/sshd-" + interface + ".pid")
-	print ("Starting iperf3 server daemon in " + if_details['namespace'] + " namespace")
-	os.system(cmd_prefix + "/usr/bin/iperf3 -D -s -i 1 --pidfile " + RUN_PATH + "/iperf3-" + interface + ".pid > /tmp/" + interface + "_iperf3.log")
-	os.system("/bin/sed -i " +"\"/" + if_details['alias'] + "/d\"" + " /etc/hosts")
-	print ("Adding interface alias to /etc/hosts:")
+	configure_log.debug("Adding interface alias to /etc/hosts")
 	with open("/etc/hosts","a") as hosts_file:
-		hosts_file.write(if_details['ipv4_addr'] + "	" + if_details['alias'] + "\n")
-		print (if_details['ipv4_addr'] + "	" + if_details['alias'] + "\n\n")
+		hosts_file.write("{}        {}\n".format(if_details['ipv4_addr'],if_details['alias']))
+		configure_log.debug("{}        {}".format(if_details['ipv4_addr'],if_details['alias']))
 
-print ("Network interfaces have been configured.")
-print ("You can access the interfaces from another computer via ssh using their IP addresses as follows:\n")
-print ("IPv4 address	Interface")
+configure_log.info("Network interfaces have been configured.\nYou can access the interfaces from another computer via ssh using their IP addresses as follows:")
+configure_log.info("IPv4 address        Interface")
 for interface in network_interfaces:
-	print (network_interfaces[interface]['ipv4_addr'] + "	" + interface)
-	print ("\nExample usage:")
-	print ("On another computer, run an iperf3 test like this:")
+	configure_log.info("{}        {}".format(network_interfaces[interface]['ipv4_addr'],interface))
+	configure_log.info("\nExample usage:\nOn another computer, run an iperf3 test like this:")
 	test_if = next(iter(network_interfaces))
 	test_if_details = network_interfaces[test_if]
-	print ("iperf3 -c " + test_if_details['ipv4_addr'])
-	print ("This will test the " + test_if_details['type'] + " interface " + test_if + " on this computer.")
-
-	print ("\nYou can switch to a network namespace using the following command:\nsudo ip netns exec <namespace name> bash -c \"su pi\"\ne.g.:\nsudo ip netns exec ns_wlan0 bash -c \"su pi\"")
+	configure_log.info("iperf3 -c {}".format(test_if_details['ipv4_addr']))
+	configure_log.info("This will test the {} interface {} on this server.".format(test_if_details['type'],test_if))
+	configure_log.info("\nYou can switch to a network namespace using the following command:\nsudo ip netns exec <namespace name> bash -c \"su pi\"\ne.g.:\nsudo ip netns exec ns_wlan0 bash -c \"su pi\"")
