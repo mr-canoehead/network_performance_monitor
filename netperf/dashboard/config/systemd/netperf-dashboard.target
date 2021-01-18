@@ -1,0 +1,7 @@
+[Unit]
+Description=Network Performance Monitor Dashboard Services
+Requires=dashboard-flask.service dashboard-celery.service
+After=network.target
+
+[Install]
+WantedBy=multi-user.target

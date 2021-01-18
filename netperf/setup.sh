@@ -212,13 +212,20 @@ fi
 
 # copy the dashboard systemd unit file and enable the service
 printf "Installing systemd unit file for the dashboard application...\n"
-if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
-	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.centos /etc/systemd/system/netperf-dashboard.service
-else
-	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.raspbian /etc/systemd/system/netperf-dashboard.service
-fi
+#if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
+cp /opt/netperf/dashboard/config/systemd/{dashboard-celery.service,dashboard-flask.service,netperf-dashboard.target} /etc/systemd/system/
+#else
+#	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.raspbian /etc/systemd/system/netperf-dashboard.service
+#fi
 systemctl daemon-reload
-systemctl enable netperf-dashboard
+systemctl enable dashboard-flask.service
+systemctl enable dashboard-celery.service
+systemctl enable netperf-dashboard.target
+
+
+# add RabbitMQ user
+rabbitmqctl add_user netperf netperf
+rabbitmqctl set_user_tags netperf administrator
 
 # copy the database systemd unit file and enable the service
 printf "Installing systemd unit file for the database daemon...\n"

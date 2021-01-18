@@ -919,92 +919,24 @@ socket.on('bandwidth_data', function(msg) {
 	netperfData.charts["bandwidth"].chartObject.update();
 });
 
-class timeBin {
-	constructor(fractionalHour) {
-		this.values = [];
-		this.time = fractionalHour;
-	}
-	addValue(value){
-		this.values.push(value);
-	}
-	mean(){
-		var m;
-		if (this.values.length > 0){
-			//return this.values.reduce((a, b) => (a + b)) / nums.length;
-			m = this.values.reduce(function (avg, value, _, { length }) {
-				return avg + value / length;
-    			}, 0);
-		}
-		else{
-			m = 0;
-		}
-		return m;
-	}
-}
-
-class timeBins {
-	constructor(binMinutes) {
-		var dayMinutes = 24*60;
-		this.binWidth = binMinutes/60;
-		this.binMiddle = this.binWidth/2;
-		this.bins=[];
-		var t = 0;
-		while (t < 24){
-			var b = new timeBin(t + this.binMiddle);
-			this.bins.push(b);
-			t += this.binWidth;
-		}
-	}
-	addValue(fractionalHour,value){
-		var b =  (Math.floor(fractionalHour / this.binWidth)).toFixed(0);
-		this.bins[b].addValue(value);
-	}
-	getTimes(){
-		var times = [];
-		for (var b in this.bins){
-			times.push(this.bins[b].time);
-		}
-		return times;
-	}
-	getMeans(){
-		var means = [];
-		for (var b in this.bins){
-			means.push(this.bins[b].mean());
-		}
-		return means;
-	}
-}
-
 socket.on('bandwidth_usage', function(msg) {
-		var rxTimeBins = new timeBins(10);
-		var txTimeBins = new timeBins(10);
-                var rx_Mbps_values = [];
-                var tx_Mbps_values = [];
-                function fillTimeBins(json){
-			var frac_hour = fractional_hour(json.timestamp);
-			rxTimeBins.addValue(frac_hour,json.rx_bps/1e6);
-			txTimeBins.addValue(frac_hour,json.tx_bps/1e6);
-                }
-                msg.forEach(fillTimeBins);
-		var rxMeans = rxTimeBins.getMeans();
-		var txMeans = txTimeBins.getMeans();
-		var rxTimes = rxTimeBins.getTimes();
-		var txTimes = txTimeBins.getTimes();
-		var rxChartPoints=[];
-		for (var t in rxTimes) {
-			rxChartPoints.push({x: rxTimes[t], y: rxMeans[t]});
-		}
-		var txChartPoints=[];
-		for (var t in txTimes) {
-			txChartPoints.push({x: txTimes[t], y: txMeans[t]});
-		}
-		var chartElement = document.getElementById(netperfData.charts["bandwidthDaily"].canvasId);
-		chartElement.classList.remove("loading");
-                netperfData.charts["bandwidthDaily"].chartObject.data.datasets[0].data = rxChartPoints;
-                netperfData.charts["bandwidthDaily"].chartObject.data.datasets[1].data = txChartPoints;
-                netperfData.charts["bandwidthDaily"].chartObject.update();
-});
+	var rxChartPoints=[];
+	var txChartPoints=[];
+	var chartElement = document.getElementById(netperfData.charts["bandwidthDaily"].canvasId);
 
+	msg.averaged_usage.rx.forEach(function (row) {
+		rxChartPoints.push({x: row.fractional_hour, y: row.value});
+	});
+
+	msg.averaged_usage.tx.forEach(function (row) {
+		txChartPoints.push({x: row.fractional_hour, y: row.value});
+	});
+
+	chartElement.classList.remove("loading");
+	netperfData.charts["bandwidthDaily"].chartObject.data.datasets[0].data = rxChartPoints;
+	netperfData.charts["bandwidthDaily"].chartObject.data.datasets[1].data = txChartPoints;
+	netperfData.charts["bandwidthDaily"].chartObject.update();
+});
 
 socket.on('bandwidth', function(msg, cb) {
 	var rx_Mbps = msg.rx_bps/1e6;

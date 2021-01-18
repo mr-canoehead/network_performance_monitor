@@ -11,14 +11,28 @@ import json
 import time
 import os
 import syslog
+
+from threading import Lock
+from flask import Flask, request, copy_current_request_context
+from flask_socketio import SocketIO, emit, disconnect
+
+from celery import Celery
+from kombu import Queue
+
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '/opt/netperf')
 
 from netperf_db import netperf_db,dashboard_queue
 from netperf_settings import netperf_settings
-from threading import Lock
-from flask import Flask, request, copy_current_request_context
-from flask_socketio import SocketIO, emit, disconnect
+from time_bins import time_bins
+from util import fractional_hour
+
+SIO_NAMESPACE="/dashboard"
+MQ_HOST="localhost"
+MQ_VHOST="netperf"
+MQ_USER="netperf"
+MQ_PASS="netperf"
+MQ_URI=f"amqp://{MQ_USER}:{MQ_PASS}@{MQ_HOST}/{MQ_VHOST}"
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -27,7 +41,23 @@ async_mode = "eventlet"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dashboard'
-socketio = SocketIO(app, async_handlers=True, async_mode=async_mode)
+app.config['CELERY_BROKER_URL'] = MQ_URI
+app.config['result_backend'] = "rpc://"
+
+celery = Celery(app.name,broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+celery.conf.broker_connection_max_retries = 5
+celery.conf.worker_prefetch_multiplier = 1
+celery.conf.task_acks_late = True
+celery.conf.task_default_queue = 'medium'
+celery.conf.task_queues = (
+    Queue('light'),
+    Queue('medium'),
+    Queue('heavy'),
+    Queue('report')
+)
+
+socketio = SocketIO(app, async_handlers=True, async_mode=async_mode, message_queue=MQ_URI)
 thread = None
 thread_lock = Lock()
 
@@ -54,26 +84,26 @@ def background_thread():
 				# discard stale bandwidth reading messages
 				if time.time() - timestamp >= 1:
 					continue
-			socketio.emit(type,data,namespace='/dashboard', broadcast=True)
+			socketio.emit(type,data,namespace=SIO_NAMESPACE, broadcast=True)
 		else:
 			# type and/or data is None, skip this message
 			continue
 
-@socketio.on('connect', namespace='/dashboard')
+@socketio.on('connect', namespace=SIO_NAMESPACE)
 def connect():
 	global thread
 	with thread_lock:
 		if thread is None:
 			thread = socketio.start_background_task(background_thread)
 
-def dbQuery(queryType, message = None):
+def dbQuery(queryType, data = None):
 	NETPERF_SETTINGS = netperf_settings()
 	db = netperf_db(NETPERF_SETTINGS.get_db_filename())
 	queryDate = datetime.date.today()
-	if message is not None:
-		if "queryDateTimestamp" in message:
+	if data is not None:
+		if "queryDateTimestamp" in data:
 			try:
-				queryDate = datetime.date.fromtimestamp(message["queryDateTimestamp"] / 1000.0)
+				queryDate = datetime.date.fromtimestamp(data["queryDateTimestamp"] / 1000.0)
 			except:
 				queryDate = datetime.date.today()
 	if queryType == 'speedtest':
@@ -92,58 +122,105 @@ def dbQuery(queryType, message = None):
 						rowData = db.get_bandwidth_data(queryDate)
 	return rowData
 
-@socketio.on('get_bandwidth_data', namespace='/dashboard')
-def get_bandwidth_data(message = None):
-	NETPERF_SETTINGS = netperf_settings()
-	db = netperf_db(NETPERF_SETTINGS.get_db_filename())
-	if (message is not None) and ("minutes" in message):
-		bwdata = db.get_bandwidth_data(minutes=message['minutes'])
-	else:
-		if (message is not None) and ("rows" in message):
-			bwdata = db.get_bandwidth_data(rows=message["rows"])
+@celery.task
+def async_task(request_event = None, data = None, requester_sid = None):
+	response_event = ""
+	response_data = None
+	if request_event == 'get_speedtest_data':
+		response_event = 'speedtest_data'
+		response_data = dbQuery('speedtest',data)
+	elif request_event == 'get_dns_data':
+		response_event = 'dns_data'
+		response_data = dbQuery('dns',data)
+	elif request_event == 'get_iperf3_data':
+		response_event = 'iperf3_data'
+		response_data = dbQuery('iperf3',data)
+	elif request_event == 'get_isp_outage_data':
+		response_event = 'isp_outage_data'
+		response_data = dbQuery('isp_outage',data)
+	elif request_event == 'get_settings':
+		response_event = 'settings'
+		nps = netperf_settings()
+		response_data = {'settings': nps.settings_json}
+	elif request_event == 'get_bandwidth_data':
+		response_event = 'bandwidth_data'
+		nps = netperf_settings()
+		db = netperf_db(nps.get_db_filename())
+		if (data is not None) and ("minutes" in data):
+			response_data = db.get_bandwidth_data(minutes=data['minutes'])
 		else:
-			bwdata = db.get_bandwidth_data(datetime.date.today())
-	emit('bandwidth_data',bwdata)
+			if (data is not None) and ("rows" in data):
+				response_data = db.get_bandwidth_data(rows=data["rows"])
+			else:
+				response_data = db.get_bandwidth_data(datetime.date.today())
+	elif request_event == 'get_bandwidth_usage':
+		response_event = 'bandwidth_usage'
+		response_data = None
+		rows = dbQuery('bandwidth_usage',data)
+		if len(rows) > 0:
+			bin_width = 10
+			rx_tbins = time_bins(bin_width)
+			tx_tbins = time_bins(bin_width)
+			for r in rows:
+				rx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["rx_bps"]/1e6))
+				tx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["tx_bps"]/1e6))
+			averaged_data = {
+				'rx': [],
+				'tx': []
+			}
+			rx_times = rx_tbins.get_times()
+			rx_means = rx_tbins.get_means()
+			tx_times = tx_tbins.get_times()
+			tx_means = tx_tbins.get_means()
+			for i in range(len(rx_times)):
+				averaged_data['rx'].append({'fractional_hour' : rx_times[i], 'value' : rx_means[i]})
+			for i in range(len(tx_times)):
+				averaged_data['tx'].append({'fractional_hour' : tx_times[i], 'value' : tx_means[i]})
+		response_data = { 'averaged_usage' : averaged_data }
+	elif request_event == 'get_report_list':
+		response_event = 'report_list'
+		nps = netperf_settings()
+		reportPath = nps.get_report_path()
+		reportFileList = []
+		for file in os.listdir(reportPath):
+			if file.endswith(".pdf"):
+				reportFileList.append(file)
+		response_data = reportFileList
 
-@socketio.on('get_bandwidth_usage', namespace='/dashboard')
-def get_bandwidth_usage(message = None):
-	bandwidth_usage = dbQuery('bandwidth_usage',message)
-	emit('bandwidth_usage',bandwidth_usage)
+	sio = SocketIO(message_queue=MQ_URI)
+	sio.emit(response_event, response_data, namespace=SIO_NAMESPACE, room=f"{requester_sid}")
 
-@socketio.on('get_speedtest_data', namespace='/dashboard')
-def get_speedtest_data(message = None):
-    speedtest_data = dbQuery('speedtest',message)
-    emit('speedtest_data',speedtest_data)
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_dns_data(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='light')
 
-@socketio.on('get_dns_data', namespace='/dashboard')
-def get_dns_data(message = None):
-	dns_data = dbQuery('dns',message)
-	emit('dns_data',dns_data)
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_bandwidth_data(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='medium')
 
-@socketio.on('get_iperf3_data', namespace='/dashboard')
-def get_iperf3_data(message = None):
-	iperf3_data = dbQuery('iperf3',message)
-	emit('iperf3_data',iperf3_data)
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_bandwidth_usage(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='heavy')
 
-@socketio.on('get_report_list', namespace='/dashboard')
-def get_report_list(message = None):
-	nps = netperf_settings()
-	reportPath = nps.get_report_path()
-	reportFileList = []
-	for file in os.listdir(reportPath):
-		if file.endswith(".pdf"):
-			reportFileList.append(file)
-	emit('report_list',reportFileList)
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_speedtest_data(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='light')
 
-@socketio.on('get_settings', namespace='/dashboard')
-def get_settings(message = None):
-	nps = netperf_settings();
-	emit('settings', {'settings': nps.settings_json});
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_iperf3_data(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='medium')
 
-@socketio.on('get_isp_outage_data', namespace='/dashboard')
-def get_isp_outage_data(message = None):
-	outage_data = dbQuery('isp_outage',message)
-	emit('isp_outage_data',outage_data)
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_isp_outage_data(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='light')
+
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_report_list(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='medium')
+
+@socketio.event(namespace=SIO_NAMESPACE)
+def get_settings(data = None):
+	async_task.apply_async(args=[request.event["message"],data,request.sid],queue='light')
 
 if __name__ == '__main__':
 	socketio.run(app, host="0.0.0.0",debug=True)

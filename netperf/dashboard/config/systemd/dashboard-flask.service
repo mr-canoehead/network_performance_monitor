@@ -1,10 +1,11 @@
 [Unit]
-Description = Network Performance Monitor Dashboard
+Description = Network Performance Monitor Dashboard Application
+PartOf = netperf-dashboard.target
 After = network.target
 
 [Service]
 PermissionsStartOnly = true
-PIDFile = /run/netperf/netperf-dashboard.pid
+PIDFile = /run/netperf/dashboard-flask.pid
 User = pi
 Group = pi
 WorkingDirectory = /opt/netperf/dashboard/application
