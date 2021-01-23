@@ -119,7 +119,6 @@ if [[ ! -d "$data_root/log" ]]; then
 	sudo -u pi touch "$data_root/log/netperf.log"
 fi
 
-
 # web server port configuration
 port_accepted=false
 until [[ "$port_accepted" == true ]]; do
@@ -190,15 +189,23 @@ fi
 
 if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 	# if firewall is active add exceptions for http and iperf3
-	fw_active=$( firewalld_active )
-	if [[ "$fw_active" == true ]]; then
-		default_zone=$( firewalld_default_zone )
+	firewall_status=$( systemctl is-active firewalld )
+	if [[ "$firewall_status" == "active" ]]; then
+		default_zone=$( firewall-cmd --get-default-zone )
 		# allow http connections
 		printf "Opening port $port/tcp for the web server...\n"
 		firewall-cmd --zone="$default_zone" --permanent --add-port="$port"/tcp
 		# allow iperf3 connections
 		printf "Opening port 5201/tcp for iperf3 connections...\n"
 		firewall-cmd --zone="$default_zone" --permanent --add-port=5201/tcp
+		# allow RabbitMQ connections
+		printf "Opening ports for RabbitMQ message broker connections...\n"
+		firewall-cmd --zone="$default_zone" --permanent --add-port=4369/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=25672/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=5671-5672/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=15672/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=61613-61614/tcp
+		firewall-cmd --zone="$default_zone" --permanent --add-port=8883/tcp
 		printf "Reloading firewall rules...\n"
 		firewall-cmd --reload
 	fi
@@ -207,25 +214,37 @@ if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
 		# allow NGINX to communicate with the network
 		printf "Setting SELinux network access permission for the web server...\n"
 		setsebool -P httpd_can_network_connect 1
+		printf "Enabling Network Information Service...\n"
+		setsebool -P nis_enabled 1
+
 	fi
 fi
 
-# copy the dashboard systemd unit file and enable the service
-printf "Installing systemd unit file for the dashboard application...\n"
-#if [[ "$OS_ID" == "centos" || "$OS_ID" == "fedora" ]]; then
-cp /opt/netperf/dashboard/config/systemd/{dashboard-celery.service,dashboard-flask.service,netperf-dashboard.target} /etc/systemd/system/
-#else
-#	cp /opt/netperf/dashboard/config/systemd/netperf-dashboard.service.raspbian /etc/systemd/system/netperf-dashboard.service
-#fi
+# configure the Celery log path
+celery_log_path="${data_root}/log/celery"
+sed -irn "s;^.*CELERYD_LOG_PATH=.*$;CELERYD_LOG_PATH=\"${celery_log_path}\";" /opt/netperf/dashboard/config/celery/dashboard-celery.conf
+
+# copy the dashboard systemd unit files and enable the services
+printf "Installing systemd unit files for the dashboard application...\n"
+cp /opt/netperf/dashboard/config/systemd/{netperf-dashboard.target,dashboard-flask.service,dashboard-celery.service} /etc/systemd/system/
+if [[ "$OS_ID" == "fedora" || "$OS_ID" == "centos" ]]; then
+	sed -irn "s/gunicorn3/gunicorn/" /etc/systemd/system/dashboard-flask.service
+fi
+
 systemctl daemon-reload
-systemctl enable dashboard-flask.service
-systemctl enable dashboard-celery.service
 systemctl enable netperf-dashboard.target
+systemctl enable dashboard-celery.service
+systemctl enable dashboard-flask.service
 
-
-# add RabbitMQ user
-rabbitmqctl add_user netperf netperf
-rabbitmqctl set_user_tags netperf administrator
+printf "Configuring RabbitMQ message broker...\n"
+MQ_VHOST="netperf"
+MQ_USER="netperf"
+MQ_PASSWORD="netperf"
+systemctl enable rabbitmq-server
+systemctl start rabbitmq-server
+rabbitmqctl add_vhost "$MQ_VHOST"
+rabbitmqctl add_user "$MQ_USER" "$MQ_PASSWORD"
+rabbitmqctl set_permissions -p "$MQ_VHOST" "$MQ_USER" '.*' '.*' '.*'
 
 # copy the database systemd unit file and enable the service
 printf "Installing systemd unit file for the database daemon...\n"

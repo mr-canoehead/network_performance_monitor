@@ -5,6 +5,7 @@
 from subprocess import check_output,Popen,STDOUT,PIPE
 import numpy as np
 import signal
+from datetime import datetime
 
 def nz_values(arr):
 # return an array containing all non-zero values in the source array
@@ -26,4 +27,13 @@ class sigterm_handler():
 	def __init__(self):
 		self.terminate = False
 		signal.signal(signal.SIGTERM, self.sh)
+
+def fractional_hour(timestamp):
+	# convert timestamp to fractional hour e.g. timestamp = 13:30 -> 13.5, timestamp = 15:45 -> 15.75 etc.
+	SECONDS_PER_HOUR = 60*60
+	dt = datetime.fromtimestamp(timestamp)
+	dt_12am = datetime.combine(dt,datetime.min.time())
+	tdelta = dt - dt_12am
+	hour_frac = round(float(tdelta.seconds)/SECONDS_PER_HOUR,3)
+	return hour_frac
 

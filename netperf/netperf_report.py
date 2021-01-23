@@ -41,15 +41,6 @@ logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF
 report_log = logging.getLogger("daily report")
 report_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
-def fractional_hour(timestamp):
-	# convert timestamp to fractional hour e.g. timestamp = 13:30 -> 13.5, timestamp = 15:45 -> 15.75 etc.
-	SECONDS_PER_HOUR = 60*60
-	dt = datetime.fromtimestamp(timestamp)
-	dt_12am = datetime.combine(dt,datetime.min.time())
-	tdelta = dt - dt_12am
-	hour_frac = round(float(tdelta.seconds)/SECONDS_PER_HOUR,3)
-	return hour_frac
-
 def align_yaxis(ax1, v1, ax2, v2):
 	"""adjust ax2 ylimit so that v2 in ax2 is aligned to v1 in ax1"""
 	_, y1 = ax1.transData.transform((0, v1))
@@ -128,9 +119,9 @@ def main():
 		rx_bytes += int(r["rx_bytes"])
 		tx_bytes += int(r["tx_bytes"])
 		speedtest_data["ping"]["raw"].append(r["ping"])
-		speedtest_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
+		speedtest_data["times"]["raw"].append(util.fractional_hour(r["timestamp"]))
 		if (r["rx_Mbps"] == 0) or (r["tx_Mbps"] == 0):
-			speedtest_data["outages"]["times"].append(fractional_hour(r["timestamp"]))
+			speedtest_data["outages"]["times"].append(util.fractional_hour(r["timestamp"]))
 		# create numpy arrays used for averaging
 	speedtest_data["rx_Mbps"]["np_array"] = np.array(speedtest_data["rx_Mbps"]["raw"])
 	speedtest_data["tx_Mbps"]["np_array"] = np.array(speedtest_data["tx_Mbps"]["raw"])
@@ -155,7 +146,7 @@ def main():
 	isp_outages={}
 	isp_outages["times"] = []
 	for r in isp_outage_rows:
-		isp_outages["times"].append(fractional_hour(r["timestamp"]))
+		isp_outages["times"].append(util.fractional_hour(r["timestamp"]))
 
 	isp_outages["y_values"] = np.zeros_like(isp_outages["times"])
 
@@ -242,9 +233,9 @@ def main():
 		bandwidth_data["tx"]["bps"] = []
 		bandwidth_data["tx"]["Mbps"] = []
 		for r in rows:
-			rx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["rx_bps"]/1e6))
-			tx_tbins.add_value(fractional_hour(r["timestamp"]),round(r["tx_bps"]/1e6))
-			bandwidth_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
+			rx_tbins.add_value(util.fractional_hour(r["timestamp"]),round(r["rx_bps"]/1e6))
+			tx_tbins.add_value(util.fractional_hour(r["timestamp"]),round(r["tx_bps"]/1e6))
+			bandwidth_data["times"]["raw"].append(util.fractional_hour(r["timestamp"]))
 			bandwidth_data["rx"]["bps"].append(r["rx_bps"])
 			bandwidth_data["rx"]["Mbps"].append(round(r["rx_bps"]/1e6,2))
 			bandwidth_data["tx"]["bps"].append(r["tx_bps"])
@@ -320,7 +311,7 @@ def main():
 			if ednsf > max_dns_failures:
 				max_dns_failures = ednsf
 			dns_data["external"]["failures"]["raw"].append(ednsf)
-			dns_data["times"]["raw"].append(fractional_hour(r["timestamp"]))
+			dns_data["times"]["raw"].append(util.fractional_hour(r["timestamp"]))
 
 		# create numpy arrays used for averaging
 		dns_data["internal"]["query_times"]["np_array"] = np.array(dns_data["internal"]["query_times"]["raw"])
@@ -390,9 +381,9 @@ def main():
 			iperf3_data["rx_Mbps"]["raw"].append(i["rx_Mbps"])
 			iperf3_data["tx_Mbps"]["raw"].append(i["tx_Mbps"])
 			iperf3_data["retransmits"]["raw"].append(i["retransmits"])
-			iperf3_data["times"]["raw"].append(fractional_hour(i["timestamp"]))
+			iperf3_data["times"]["raw"].append(util.fractional_hour(i["timestamp"]))
 			if (i["rx_Mbps"] == 0) or (i["tx_Mbps"] == 0):
-				iperf3_data["outages"]["times"].append(fractional_hour(i["timestamp"]))
+				iperf3_data["outages"]["times"].append(util.fractional_hour(i["timestamp"]))
 
 		# create numpy arrays used for averaging
 		iperf3_data["rx_Mbps"]["np_array"] = np.array(iperf3_data["rx_Mbps"]["raw"])

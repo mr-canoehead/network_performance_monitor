@@ -39,6 +39,8 @@ os_id=$( get_os_id )
 printf "System type: $os_id\n\n"
 
 if [[ "$os_id" == "centos" ]]; then
+	# install 'newt' for the whiptail command used by this script
+	install_os_package newt > /dev/null
 	# enable PowerTools repository for libqhull (required for python3-matplotlib on CentOS systems)
 	printf "Installing dnf-plugins-core...\n"
 	install_os_package dnf-plugins-core > /dev/null
@@ -53,6 +55,8 @@ if [[ "$os_id" == "centos" ]]; then
 	fi
 else
 	if [[ "$os_id" == "fedora" ]]; then
+		# install 'newt' for the whiptail command used by this script
+		install_os_package newt > /dev/null
 		os_packages=("${fedora_os_packages[@]}")
 		sel_enforced=$( selinux_enforced )
 		if [[ "$sel_enforced" == true ]]; then
