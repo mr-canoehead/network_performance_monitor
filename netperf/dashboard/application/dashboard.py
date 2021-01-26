@@ -53,8 +53,7 @@ celery.conf.task_default_queue = 'medium'
 celery.conf.task_queues = (
     Queue('light'),
     Queue('medium'),
-    Queue('heavy'),
-    Queue('report')
+    Queue('heavy')
 )
 
 socketio = SocketIO(app, async_handlers=True, async_mode=async_mode, message_queue=MQ_URI)
