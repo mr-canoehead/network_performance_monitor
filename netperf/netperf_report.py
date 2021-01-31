@@ -53,7 +53,7 @@ def align_yaxis(ax1, v1, ax2, v2):
 class pgf_keyvals:
 	def __init__ (self):
 		self.keyvalues = []
-		
+
 	def add(self,key,value):
 		self.keyvalues.append({ "key" : key, "value" : value })
 
@@ -80,7 +80,7 @@ def main():
 				query_date = datetime.strptime(sys.argv[1], '%Y-%m-%d')
 			except:
 				query_date = yesterday
-			if query_date > midnight:
+			if query_date.date() > today:
 				report_log.error("Invalid report date; cannot generate a report for future dates.")
 				return
 	else:
