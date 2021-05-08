@@ -31,7 +31,7 @@ fedora_os_packages=( gcc sqlite python3-daemon python3-matplotlib python3-devel 
                      bind-utils iw wpa_supplicant bc nginx python3-gunicorn rabbitmq-server python3-pip libqhull texlive-latex \
                      texlive-collection-latexrecommended texlive-titlesec newt cronie cronie-anacron )
 
-pip_packages=( posix_ipc flask flask-socketio eventlet requests kombu celery )
+pip_packages=( posix_ipc flask flask-socketio requests kombu celery )
 
 printf "\nInstalling software packages required for the Network Performance Monitor project.\n\n"
 

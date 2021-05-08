@@ -2,8 +2,6 @@
 # This file is part of the Network Performance Monitor which is released under the GNU General Public License v3.0
 # See the file LICENSE for full license details.
 
-import eventlet
-eventlet.monkey_patch()
 import sys
 import datetime
 import syslog
@@ -37,7 +35,7 @@ MQ_URI=f"amqp://{MQ_USER}:{MQ_PASS}@{MQ_HOST}/{MQ_VHOST}"
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
-async_mode = "eventlet"
+async_mode = "threading"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dashboard'
