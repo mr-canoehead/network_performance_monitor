@@ -291,7 +291,7 @@ ookla_installed=$( os_package_installed speedtest )
 if [[ "$speedtest_cli_installed" == true ]]; then
 	speedtest_client="speedtest-cli"
 else
-	if [[ "$ookla_installed" == true ]]; then
+	if [[ "$ookla_installed" == true ]] || [[ $(command -v /usr/bin/speedtest) ]]; then
 		speedtest_client="ookla"
 	else
 		printf "Error: a speedtest client is not installed. Please run the package installer script.\n"
