@@ -1,7 +1,7 @@
 [Unit]
 Description = Network Performance Monitor Dashboard Application
 PartOf = netperf-dashboard.target
-After = network.target
+After = netperf-storage.service netperf-interfaces.service
 
 [Service]
 PermissionsStartOnly = true

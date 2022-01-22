@@ -246,6 +246,12 @@ rabbitmqctl add_vhost "$MQ_VHOST"
 rabbitmqctl add_user "$MQ_USER" "$MQ_PASSWORD"
 rabbitmqctl set_permissions -p "$MQ_VHOST" "$MQ_USER" '.*' '.*' '.*'
 
+# copy the netperf storage unit file and enable the service
+printf "Installing systemd unit file for the netperf storage service...\n"
+cp /opt/netperf/config/systemd/netperf-storage.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable netperf-storage
+
 # copy the database systemd unit file and enable the service
 printf "Installing systemd unit file for the database daemon...\n"
 cp /opt/netperf/config/systemd/netperf-db.service /etc/systemd/system

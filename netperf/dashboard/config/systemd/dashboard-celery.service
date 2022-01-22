@@ -1,7 +1,7 @@
 [Unit]
 Description=Celery Service
 PartOf=netperf-dashboard.target
-After=network.target
+After=netperf-storage.service netperf-interfaces.service
 
 [Service]
 Type=forking

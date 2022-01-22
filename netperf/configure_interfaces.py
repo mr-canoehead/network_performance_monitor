@@ -14,7 +14,6 @@ import logging
 import shutil
 from netperf_settings import netperf_settings
 
-
 class bcolors:
 	FAIL = '\033[91m'
 	WARNING = '\033[93m'

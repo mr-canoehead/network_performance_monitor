@@ -18,10 +18,10 @@ source /opt/netperf/scriptutils.sh
 
 raspbian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib iperf3 \
                        dnsutils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
-                       bc nginx gunicorn3 rabbitmq-server python3-pip)
+                       bc nginx gunicorn rabbitmq-server python3-pip)
 
 debian_os_packages=( sqlite3 python3-daemon python3-numpy python3-matplotlib iperf3 dnsutils texlive-latex-recommended texlive-latex-extra \
-                     iw wpasupplicant bc nginx gunicorn3 rabbitmq-server python3-pip )
+                     iw wpasupplicant bc nginx gunicorn rabbitmq-server python3-pip )
 
 centos_os_packages=( epel-release gcc sqlite python3-daemon python3-matplotlib python36-devel iperf3 \
                      bind-utils iw wpa_supplicant bc nginx python3-gunicorn rabbitmq-server python3-pip libqhull texlive-latex \

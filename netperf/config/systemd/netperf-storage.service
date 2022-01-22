@@ -1,0 +1,10 @@
+[Unit]
+Description=Network Performance Monitor storage check
+
+[Service]
+ExecStart=/opt/netperf/tools/netperf_storage.sh
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
+
