@@ -31,6 +31,15 @@ if [[ -L "/etc/systemd/network/99-default.link" ]]; then
 	exit 1
 fi
 
+# configure runtime data directories
+rtd_config_file="/etc/tmpfiles.d/netperf_rtd.conf"
+cat > "$rtd_config_file" << EOM
+d /run/netperf 0755 pi pi - -
+d /run/netperf/celery 0755 pi pi - -
+EOM
+# create these directories
+systemd-tmpfiles --create
+
 valid_dir=false
 write_access=false
 cancel=false

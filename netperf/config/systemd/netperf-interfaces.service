@@ -1,7 +1,6 @@
 [Unit]
 Description = Network Performance Monitor Interface Configuration
-Requires = network.target
-After = netperf-storage.service network.target
+After = netperf-storage.service
 
 [Service]
 Type=forking

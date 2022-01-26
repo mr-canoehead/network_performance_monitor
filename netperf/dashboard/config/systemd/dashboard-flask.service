@@ -1,7 +1,7 @@
 [Unit]
 Description = Network Performance Monitor Dashboard Application
 PartOf = netperf-dashboard.target
-After = netperf-storage.service netperf-interfaces.service
+After = netperf-storage.service
 
 [Service]
 PermissionsStartOnly = true
@@ -9,8 +9,6 @@ PIDFile = /run/netperf/dashboard-flask.pid
 User = pi
 Group = pi
 WorkingDirectory = /opt/netperf/dashboard/application
-ExecStartPre = /bin/mkdir -p /run/netperf
-ExecStartPre = /bin/chown -R pi:pi /run/netperf
 ExecStart = /usr/bin/env gunicorn3 dashboard:app --timeout 30 -w 1 --threads 6 -b 0.0.0.0:8000 --pid /run/netperf/netperf-dashboard.pid
 ExecReload = /bin/kill -s HUP $MAINPID
 ExecStop = /bin/kill -s TERM $MAINPID

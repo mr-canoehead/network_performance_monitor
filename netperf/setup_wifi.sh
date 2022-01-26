@@ -11,7 +11,7 @@ COUNTRY_CODE="$1"
 INTERFACE="$2"
 WPA_SUPPLICANT_PATH="/opt/netperf/config/wpa_supplicant"
 WPA_SUPPLICANT_FILE="$WPA_SUPPLICANT_PATH/$INTERFACE.conf"
-CTRL_INTERFACE_PATH="/var/run/netperf/wpa_supplicant"
+CTRL_INTERFACE_PATH="/run/netperf/wpa_supplicant"
 TITLE="Wireless network configuration"
 
 # check command line parameters

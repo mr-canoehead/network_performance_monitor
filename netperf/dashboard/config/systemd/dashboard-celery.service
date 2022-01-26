@@ -1,7 +1,7 @@
 [Unit]
 Description=Celery Service
 PartOf=netperf-dashboard.target
-After=netperf-storage.service netperf-interfaces.service
+After=netperf-storage.service
 
 [Service]
 Type=forking
@@ -10,7 +10,7 @@ Group=pi
 EnvironmentFile=/opt/netperf/dashboard/config/celery/dashboard-celery.conf
 WorkingDirectory=/opt/netperf/dashboard/application
 PermissionsStartOnly=true
-ExecStartPre=/bin/sh -c 'mkdir -p /var/run/celery; chown -R ${CELERYD_USER}:${CELERYD_GROUP} /var/run/celery; mkdir -p ${CELERYD_LOG_PATH}; chown -R ${CELERYD_USER}:${CELERYD_GROUP} ${CELERYD_LOG_PATH}'
+ExecStartPre=/bin/sh -c 'mkdir -p ${CELERYD_LOG_PATH}; chown -R ${CELERYD_USER}:${CELERYD_GROUP} ${CELERYD_LOG_PATH}'
 ExecStart=/bin/sh -c '${CELERY_BIN} -A $CELERY_APP multi start $CELERYD_NODES \
     --pidfile=${CELERYD_PID_FILE} --logfile=${CELERYD_LOG_FILE} \
     --loglevel="${CELERYD_LOG_LEVEL}" $CELERYD_OPTS'
