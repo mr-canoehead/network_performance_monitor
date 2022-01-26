@@ -6,7 +6,6 @@ After = netperf-storage.service
 Type=forking
 ExecStart = /usr/bin/python3 /opt/netperf/configure_interfaces.py
 ExecStartPost = /usr/bin/bash -c 'systemctl restart nginx.service'
-Type=oneshot
 
 [Install]
 WantedBy = multi-user.target
