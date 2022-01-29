@@ -102,27 +102,40 @@ else
 		printf "Removing speedtest-cli client...\n"
 		remove_pip_package speedtest-cli > /dev/null
 	fi
-	if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
-		printf "Adding Ookla repository...\n"
-		package_installed=$( os_package_installed wget )
-		if [[ "$package_installed" == false ]]; then
-			printf "Installing wget...\n"
-			install_os_package wget > /dev/null
-		fi
-		wget https://bintray.com/ookla/rhel/rpm -O bintray-ookla-rhel.repo > /dev/null 2>&1
-		mv bintray-ookla-rhel.repo /etc/yum.repos.d/ > /dev/null 2>&1
-		os_packages+=( speedtest )
-	else
-		if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
-			printf "Adding Ookla repository...\n"
-			INSTALL_KEY=379CE192D401AB61
-			DEB_DISTRO=$(lsb_release -sc)
-			install_os_package gnupg1 > /dev/null
-			sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$INSTALL_KEY"
-			echo "deb https://ookla.bintray.com/debian ${DEB_DISTRO} main" | sudo tee  /etc/apt/sources.list.d/speedtest.list > /dev/null
-			os_packages+=( apt-transport-https dirmngr speedtest)
-		fi
+
+	# Due to changes in how Ookla distributes its command line tool it must be installed manually
+	# before running this package installer script. Refer to the project wiki for instructions:
+	# https://github.com/mr-canoehead/network_performance_monitor/wiki/Install-project-files-and-required-software-packages
+
+	command -v speedtest > /dev/null
+	if [[ "$?" -ne 0 ]]; then
+		printf "The Ookla speedtest client must be installed manually prior to running this script.\n"
+		printf "Refer to the project wiki for instructions:\n"
+		printf "https://github.com/mr-canoehead/network_performance_monitor/wiki/Install-project-files-and-required-software-packages"
+		exit 1
 	fi
+
+	#if [[ "$os_id" == "centos" || "$os_id" == "fedora" ]]; then
+	#	printf "Adding Ookla repository...\n"
+	#	package_installed=$( os_package_installed wget )
+	#	if [[ "$package_installed" == false ]]; then
+	#		printf "Installing wget...\n"
+	#		install_os_package wget > /dev/null
+	#	fi
+	#	wget https://bintray.com/ookla/rhel/rpm -O bintray-ookla-rhel.repo > /dev/null 2>&1
+	#	mv bintray-ookla-rhel.repo /etc/yum.repos.d/ > /dev/null 2>&1
+	#	os_packages+=( speedtest )
+	#else
+	#	if [[ "$os_id" == "raspbian" || "$os_id" == "debian" ]]; then
+	#		printf "Adding Ookla repository...\n"
+	#		INSTALL_KEY=379CE192D401AB61
+	#		DEB_DISTRO=$(lsb_release -sc)
+	#		install_os_package gnupg1 > /dev/null
+	#		sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys "$INSTALL_KEY"
+	#		echo "deb https://ookla.bintray.com/debian ${DEB_DISTRO} main" | sudo tee  /etc/apt/sources.list.d/speedtest.list > /dev/null
+	#		os_packages+=( apt-transport-https dirmngr speedtest)
+	#	fi
+	#fi
 fi
 
 printf "Updating repository cache...\n"
