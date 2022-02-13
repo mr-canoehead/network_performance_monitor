@@ -44,7 +44,7 @@ app.config['result_backend'] = "rpc://"
 
 celery = Celery(app.name,broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
-celery.conf.broker_connection_max_retries = 5
+celery.conf.broker_connection_max_retries = 0
 celery.conf.worker_prefetch_multiplier = 1
 celery.conf.task_acks_late = True
 celery.conf.task_default_queue = 'medium'
