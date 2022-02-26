@@ -6,7 +6,7 @@
 import os
 import json
 from datetime import datetime
-from subprocess import check_output,Popen,STDOUT,PIPE
+from subprocess import check_output,Popen,STDOUT,DEVNULL,PIPE
 import sys
 import util
 import time
@@ -151,7 +151,7 @@ def test_isp(test_exec_namespace,dbq):
 			speedtest_server_opt = ""
 		cmd = "{}/usr/bin/speedtest --accept-license --format=json {}".format(cmd_prefix,speedtest_server_opt)
 	print (cmd)
-	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
+	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=DEVNULL)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
 		test_log.info("Successful speedtest.")
