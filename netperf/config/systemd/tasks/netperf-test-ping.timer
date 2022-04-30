@@ -1,0 +1,11 @@
+[Unit]
+Description=Test internet connectivity
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* *:*:45
+Unit=netperf-test-ping.service
+
+[Install]
+WantedBy=timers.target

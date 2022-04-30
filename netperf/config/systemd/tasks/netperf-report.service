@@ -1,0 +1,7 @@
+[Unit]
+Description=Generate network performance report for the previous day
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/netperf/netperf_report.py
+

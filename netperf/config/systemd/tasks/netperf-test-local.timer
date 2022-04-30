@@ -1,0 +1,11 @@
+[Unit]
+Description=Test local network connection speeds
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* *:0/10:00
+Unit=netperf-test-local.service
+
+[Install]
+WantedBy=timers.target

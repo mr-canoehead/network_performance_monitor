@@ -6,8 +6,8 @@ After = netperf-storage.service
 [Service]
 PermissionsStartOnly = true
 PIDFile = /run/netperf/dashboard-flask.pid
-User = pi
-Group = pi
+User = netperf
+Group = netperf
 WorkingDirectory = /opt/netperf/dashboard/application
 ExecStart = /usr/bin/env gunicorn3 dashboard:app --timeout 30 -w 1 --threads 6 -b 0.0.0.0:8000 --pid /run/netperf/netperf-dashboard.pid
 ExecReload = /bin/kill -s HUP $MAINPID

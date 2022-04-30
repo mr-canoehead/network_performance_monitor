@@ -1,0 +1,11 @@
+[Unit]
+Description=Test ISP connection speed
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* *:5,35:00
+Unit=netperf-test-isp.service
+
+[Install]
+WantedBy=timers.target

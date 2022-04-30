@@ -1,4 +1,5 @@
 {
+    "username": "netperf",
     "db_write_queue": "/netperf.db", 
     "bandwidth_monitor": {
         "enabled": true

@@ -30,6 +30,8 @@ FORCE_CONFIGURE = False
 DISABLE_CONFIGURE = False
 NETPERF_SETTINGS = netperf_settings()
 
+username = NETPERF_SETTINGS.get_username()
+
 logging.basicConfig(filename=NETPERF_SETTINGS.get_log_filename(), format=NETPERF_SETTINGS.get_logger_format())
 configure_log = logging.getLogger("configure_interfaces")
 configure_log.setLevel(NETPERF_SETTINGS.get_log_level())
@@ -119,7 +121,7 @@ if bridge_info["configure"] == True:
 
 	# start the bandwidth monitoring daemon
 	configure_log.debug("starting the bandwidth monitoring daemon")
-	os.system("{} /sbin/runuser -l pi -c 'python3 /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,modem_interface))
+	os.system("{} /sbin/runuser -l {} -c 'python3 /opt/netperf/bwmonitor.py -i {}'".format(cmd_prefix,username,modem_interface))
 	configure_log.info("bandwidth monitoring bridge configuration is complete")
 else:
 	configure_log.info("Bandwidth monitoring is disabled.")

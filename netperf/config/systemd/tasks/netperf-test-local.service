@@ -1,0 +1,7 @@
+[Unit]
+Description=Test local network connection speeds
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/netperf/test_network.py local
+

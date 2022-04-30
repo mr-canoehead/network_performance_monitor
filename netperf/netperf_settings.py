@@ -42,6 +42,9 @@ class netperf_settings:
 		with open(SETTINGS_FILE) as sf:
 			self.settings_json = json.load(sf)
 
+	def get_username(self):
+		return self.settings_json.get("username",None)
+
 	def get_data_root(self):
 		if "data_root" in self.settings_json:
 			return str(self.settings_json["data_root"])
@@ -130,6 +133,10 @@ class netperf_settings:
 
 	def set_speedtest_enforce_quota(self,flag):
 		self.settings_json["speedtest"]["enforce_quota"] = flag
+		self.save_settings()
+
+	def set_username(self, username):
+		self.settings_json["username"] = username
 		self.save_settings()
 
 	def set_data_root(self,path):
@@ -222,21 +229,18 @@ def main():
 	if action == "get":
 		if setting == "db_filename":
 			print (ns.get_db_filename())
-		else:
-			if setting == "log_filename":
-				print (ns.get_log_filename())
-			else:
-				if setting == "data_root":
-					print (ns.get_data_root())
-				else:
-					if setting == "report_path":
-						print (ns.get_report_path())
-					else:
-						if setting == "speedtest_server_id":
-							print (ns.get_speedtest_server_id())
-						else:
-							if setting == "speedtest_client":
-								print (ns.get_speedtest_client())
+		elif setting == "log_filename":
+			print (ns.get_log_filename())
+		elif setting == "username":
+			print (ns.get_username())
+		elif setting == "data_root":
+			print (ns.get_data_root())
+		elif setting == "report_path":
+			print (ns.get_report_path())
+		elif setting == "speedtest_server_id":
+			print (ns.get_speedtest_server_id())
+		elif setting == "speedtest_client":
+			print (ns.get_speedtest_client())
 
 	if action == "set":
 		if setting == "data_usage_quota_GB":
@@ -252,64 +256,57 @@ def main():
 				sys.exit(0)
 			else:
 				ns.set_data_usage_quota_GB(data_usage_quota_GB)
-		else:
-			if setting == "enforce_quota":
-				value_error = False
-				if value.lower() == "true":
-					flag = True
-				else:
-					if value.lower() == "false":
-						flag = False
-					else:
-						value_error = True
-				if value_error:
-					print ("enforce_quota value must be True or False")
-				else:
-					ns.set_speedtest_enforce_quota(flag)
+		elif setting == "enforce_quota":
+			value_error = False
+			if value.lower() == "true":
+				flag = True
 			else:
-				if setting == "data_root":
-					if os.path.isdir(value):
-						ns.set_data_root(value)
-					else:
-						print("Invalid path.")
+				if value.lower() == "false":
+					flag = False
 				else:
-					if setting == "log_level":
-						if value in log_levels:
-							ns.set_log_level(value)
-						else:
-							print("Invalid log level")
-					else:
-						if setting == "dashboard_enabled":
-							if value.lower() == "true":
-								ns.set_dashboard_enabled(True)
-							else:
-								if value.lower() == "false":
-									ns.set_dashboard_enabled(False)
-								else:
-									print ("dashboard_enabled value must be True or False")
-						else:
-							if setting == "bwmonitor_enabled":
-								if value.lower() == "true":
-									ns.set_bandwidth_monitor_enabled(True)
-								else:
-									if value.lower() == "false":
-										ns.set_bandwidth_monitor_enabled(False)
-									else:
-										print ("bwmonitor_enabled value must be True or False")
-							else:
-								if setting == "speedtest_client":
-									if value.lower() == "ookla":
-										ns.set_speedtest_client("ookla")
-									else:
-										if value.lower() == "speedtest-cli":
-											ns.set_speedtest_client("speedtest-cli")
-										else:
-											print ("speedtest_client value must be 'speedtest-cli' or 'ookla'")
-								else:
-									if setting == "speedtest_server_id":
-										if value != "":
-											ns.set_speedtest_server_id(value)
-										else:
-											print ("speedtest_server_id setting requires a value")
+					value_error = True
+			if value_error:
+				print ("enforce_quota value must be True or False")
+			else:
+				ns.set_speedtest_enforce_quota(flag)
+		elif setting == "username":
+			ns.set_username(value)
+		elif setting == "data_root":
+			if os.path.isdir(value):
+				ns.set_data_root(value)
+			else:
+				print("Invalid path.")
+		elif setting == "log_level":
+			if value in log_levels:
+				ns.set_log_level(value)
+			else:
+				print("Invalid log level")
+		elif setting == "dashboard_enabled":
+			if value.lower() == "true":
+				ns.set_dashboard_enabled(True)
+			elif value.lower() == "false":
+				ns.set_dashboard_enabled(False)
+			else:
+				print ("dashboard_enabled value must be True or False")
+		elif setting == "bwmonitor_enabled":
+			if value.lower() == "true":
+				ns.set_bandwidth_monitor_enabled(True)
+			elif value.lower() == "false":
+				ns.set_bandwidth_monitor_enabled(False)
+			else:
+				print ("bwmonitor_enabled value must be True or False")
+		elif setting == "speedtest_client":
+			if value.lower() == "ookla":
+				ns.set_speedtest_client("ookla")
+			elif value.lower() == "speedtest-cli":
+				ns.set_speedtest_client("speedtest-cli")
+			else:
+				print ("speedtest_client value must be 'speedtest-cli' or 'ookla'")
+		elif setting == "speedtest_server_id":
+			if value != "":
+				ns.set_speedtest_server_id(value)
+			else:
+				print ("speedtest_server_id setting requires a value")
+
 if __name__ == "__main__":
 	main()

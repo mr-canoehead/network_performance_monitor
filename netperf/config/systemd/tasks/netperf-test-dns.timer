@@ -1,0 +1,11 @@
+[Unit]
+Description=Test DNS queries
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* *:0/10:00
+Unit=netperf-test-dns.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,6 @@
+[Unit]
+Description=Test ISP connection speed
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/netperf/test_network.py isp

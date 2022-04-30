@@ -31,12 +31,22 @@ if [[ -L "/etc/systemd/network/99-default.link" ]]; then
 	exit 1
 fi
 
+# add user account for various project services and tasks
+username=$("$CONFIG_APP" --get username)
+uid=$(id -u "$username" 2>/dev/null)
+if [[ "$?" -ne 0 ]]; then
+        printf "Adding netperf user...\n"
+        useradd "$username" 2>/dev/null
+fi
+mkdir -p "/home/$username/.config/systemd/user"
+chown -R "$username:$username" "/home/$username"
+
 # configure runtime data directories
 rtd_config_file="/etc/tmpfiles.d/netperf_rtd.conf"
-cat > "$rtd_config_file" << EOM
-d /run/netperf 0755 pi pi - -
-d /run/netperf/celery 0755 pi pi - -
-EOM
+config_data="d /run/netperf 0755 $username - -\n"
+config_data="${config_data}d /run/netperf/celery 0755 $username - -\n"
+printf "%b%s" "$config_data" > "$rtd_config_file"
+
 # create these directories
 systemd-tmpfiles --create
 
@@ -78,18 +88,14 @@ do
 			fi
 	fi
 
+	chown -R "$username:$username" "$data_root"
+
 	if [[ "$valid_dir" == true ]]; then
-		username="pi"
-		if read -a dirVals < <(stat -Lc "%U %G %A" "$data_root") && (
-		( [ "$dirVals" == "$username" ] && [ "${dirVals[2]:2:1}" == "w" ] ) ||
-		( [ "${dirVals[2]:8:1}" == "w" ] ) ||
-		( [ "${dirVals[2]:5:1}" == "w" ] && (gMember=($(groups "$username")) &&
-		[[ "${gMember[*]:2}" =~ ^(.* |)"${dirVals[1]}"( .*|)$ ]]
-		) ) )
-		then
+		su "$username" -c "test -w $data_root"
+		if [[ "$?" -eq 0 ]]; then
 			write_access=true
 		else
-			whiptail --title "$TITLE" --yesno --yes-button "Ok" --no-button "Exit" "Error: The 'pi' user does not have write access to the specified directory.\n\nChoose 'Ok' to enter a different directory name, or choose 'Exit' to leave the configuration script so that you can correct this issue." 10 80 3>&1 1>&2 2>&3
+			whiptail --title "$TITLE" --yesno --yes-button "Ok" --no-button "Exit" "Error: The '$username' user does not have write access to the specified directory.\n\nChoose 'Ok' to enter a different directory name, or choose 'Exit' to leave the configuration script so that you can correct this issue." 10 80 3>&1 1>&2 2>&3
 			if [[ "$?" -eq 1 ]]; then
 				exit 0
 			fi
@@ -123,9 +129,9 @@ fi
 
 # create the log directory if it doesn't exist:
 if [[ ! -d "$data_root/log" ]]; then
-	sudo -u pi mkdir "$data_root/log"
-	# create the initial log file as the 'pi' user
-	sudo -u pi touch "$data_root/log/netperf.log"
+	sudo -u "$username" mkdir "$data_root/log"
+	# create the initial log file as the 'netperf' user
+	sudo -u "$username" touch "$data_root/log/netperf.log"
 fi
 
 # web server port configuration
@@ -281,7 +287,7 @@ python3 "$CONFIG_APP" --set enforce_quota --value "$enforce_quota"
 # create the reports directory if it doesn't exist:
 report_path=$( python3 "$CONFIG_APP" --get report_path )
 if [[ ! -d "$report_path" ]]; then
-	sudo -u pi mkdir -p "$report_path"
+	sudo -u "$username" mkdir -p "$report_path"
 fi
 
 # link the reports directory to the dashboard html directory:
@@ -305,13 +311,14 @@ speedtest_cli_installed=$( pip_package_installed speedtest-cli )
 ookla_installed=$( os_package_installed speedtest )
 if [[ "$speedtest_cli_installed" == true ]]; then
 	speedtest_client="speedtest-cli"
+elif [[ "$ookla_installed" == true ]] || [[ $(command -v /usr/bin/speedtest) ]]; then
+	speedtest_client="ookla"
+	# Run the Ookla Speedtest CLI application so that the user can accept the Ookla license agreement.
+	whiptail --title "Ookla license agreement" --msgbox "The system will now run the Speedtest CLI application so that you can accept the Ookla license agreement." 10 80 3>&1 1>&2 2>&3
+	sudo -u "$username" speedtest
 else
-	if [[ "$ookla_installed" == true ]] || [[ $(command -v /usr/bin/speedtest) ]]; then
-		speedtest_client="ookla"
-	else
-		printf "Error: a speedtest client is not installed. Please run the package installer script.\n"
-		exit 1
-	fi
+	printf "Error: a speedtest client is not installed. Please run the package installer script.\n"
+	exit 1
 fi
 python3 "$CONFIG_APP" --set speedtest_client --value "$speedtest_client"
 

@@ -5,8 +5,8 @@ After=netperf-storage.service
 
 [Service]
 Type=forking
-User=pi
-Group=pi
+User=netperf
+Group=netperf
 EnvironmentFile=/opt/netperf/dashboard/config/celery/dashboard-celery.conf
 WorkingDirectory=/opt/netperf/dashboard/application
 PermissionsStartOnly=true

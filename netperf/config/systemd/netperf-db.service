@@ -5,8 +5,8 @@ After = netperf-storage.service
 [Service]
 PermissionsStartOnly = true
 PIDFile = /run/netperf/netperf-db.pid
-User = pi
-Group = pi
+User = netperf
+Group = netperf
 WorkingDirectory = /opt/netperf
 ExecStart = /usr/bin/python3 /opt/netperf/netperf_db.py
 ExecReload = /bin/kill -s HUP $MAINPID

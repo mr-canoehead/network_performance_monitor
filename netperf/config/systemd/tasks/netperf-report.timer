@@ -1,0 +1,11 @@
+[Unit]
+Description=Generate network performance report for the previous day
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* 0:25:00
+Unit=netperf-report.service
+
+[Install]
+WantedBy=timers.target

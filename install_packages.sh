@@ -205,13 +205,6 @@ if [[ "$all_packages_installed" == "false" ]]; then
 	echo "Error: One or more required packages failed to install. Check your Internet connection from this machine, or switch mirrors."
 	echo "       Then run this script again."
 else
-	# if the Ookla Speedtest CLI application is installed, run it so that the user can accept the Ookla license agreement.
-		result=$( os_package_installed speedtest )
-		if [[ "$result" == true ]]; then
-			whiptail --title "Ookla license agreement" --msgbox "The system will now run the Speedtest CLI application so that you can accept the Ookla license agreement." 10 80 3>&1 1>&2 2>&3
-			sudo -u pi speedtest
-        fi
-	echo
 	echo "All required packages were installed successfully."
 fi
 

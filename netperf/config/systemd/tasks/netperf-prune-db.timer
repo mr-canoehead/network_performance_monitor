@@ -1,0 +1,11 @@
+[Unit]
+Description=Prune the netperf database (delete rows more than 7 days old and compact the database)
+
+[Timer]
+#Execute job if it missed a run due to machine being off
+Persistent=false
+OnCalendar=*-*-* 0:15:00
+Unit=netperf-prune-db.service
+
+[Install]
+WantedBy=timers.target

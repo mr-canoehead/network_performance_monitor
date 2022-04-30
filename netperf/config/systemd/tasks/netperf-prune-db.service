@@ -1,0 +1,7 @@
+[Unit]
+Description=Prune the netperf database (delete rows more than 7 days old and compact the database)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/netperf/prune_db.py
+
