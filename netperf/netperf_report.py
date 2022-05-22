@@ -106,6 +106,10 @@ def main():
 	speedtest_data["tx_Mbps"]["raw"] = []
 	speedtest_data["ping"] = {}
 	speedtest_data["ping"]["raw"] = []
+	speedtest_data["bwm_rx_Mbps"] = {}
+	speedtest_data["bwm_rx_Mbps"]["raw"] = []
+	speedtest_data["bwm_tx_Mbps"] = {}
+	speedtest_data["bwm_tx_Mbps"]["raw"] = []
 	speedtest_data["times"] = {}
 	speedtest_data["times"]["raw"] = []
 	speedtest_data["outages"] = {}
@@ -114,8 +118,16 @@ def main():
 	tx_bytes = 0
 
 	for r in rows:
-		speedtest_data["rx_Mbps"]["raw"].append(r["rx_Mbps"])
-		speedtest_data["tx_Mbps"]["raw"].append(r["tx_Mbps"])
+		rx_Mbps = r["rx_Mbps"]
+		tx_Mbps = r["tx_Mbps"]
+		bwm_rx_Mbps = r["bwm_rx_Mbps"]
+		bwm_tx_Mbps = r["bwm_tx_Mbps"]
+		if bwm_rx_Mbps > rx_Mbps:
+			rx_Mbps = bwm_rx_Mbps
+		if bwm_tx_Mbps > tx_Mbps:
+			tx_Mbps = bwm_tx_Mbps
+		speedtest_data["rx_Mbps"]["raw"].append(rx_Mbps)
+		speedtest_data["tx_Mbps"]["raw"].append(tx_Mbps)
 		rx_bytes += int(r["rx_bytes"])
 		tx_bytes += int(r["tx_bytes"])
 		speedtest_data["ping"]["raw"].append(r["ping"])

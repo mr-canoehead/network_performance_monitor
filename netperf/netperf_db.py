@@ -75,6 +75,8 @@ class netperf_db:
 										remote_host text NOT NULL,
 										url text NOT NULL,
 										ping real,
+										bwm_rx_Mbps real NOT NULL,
+										bwm_tx_Mbps real NOT NULL,
 										PRIMARY KEY (client_id,epoch_time)
 										); """
 
@@ -203,9 +205,11 @@ class netperf_db:
 				data["tx_bytes"],\
 				data["remote_host"], \
 				data["url"], \
-				data["ping"] )
-		sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
-			VALUES(?,?,?,?,?,?,?,?,?);'''
+				data["ping"], \
+				data["bwm_rx_Mbps"], \
+				data["bwm_tx_Mbps"] )
+		sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping,bwm_rx_Mbps,bwm_tx_Mbps)
+			VALUES(?,?,?,?,?,?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
 		cur.execute(sql, row_data)
 		self.db_conn.commit()
@@ -313,6 +317,8 @@ class netperf_db:
 		col_remote_host=6
 		col_url=7
 		col_ping=8
+		col_bwm_rx_Mbps=9
+		col_bwm_tx_Mbps=10
 		results=[]
 		for i in cur.fetchall():
 			results.append({"timestamp" : i[col_time], \
@@ -322,7 +328,9 @@ class netperf_db:
 					"tx_bytes" : i[col_tx_bytes], \
 					"ping" : i[col_ping], \
 					"remote_host" : i[col_remote_host],\
-					"url" : i[col_url]})
+					"url" : i[col_url],\
+					"bwm_rx_Mbps" : i[col_bwm_rx_Mbps],\
+					"bwm_tx_Mbps" : i[col_bwm_tx_Mbps]})
 		cur.close()
 		return results
 

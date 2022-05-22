@@ -199,6 +199,12 @@ class netperf_settings:
 			server_id = None
 		return server_id
 
+	def get_bandwidth_monitor_enabled(self):
+		bwm_enabled=False
+		if "bandwidth_monitor" in self.settings_json:
+			bwm_enabled=self.settings_json["bandwidth_monitor"].get("enabled",False)
+		return bwm_enabled
+
 def main():
 	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
 	ns = netperf_settings()
@@ -241,6 +247,8 @@ def main():
 			print (ns.get_speedtest_server_id())
 		elif setting == "speedtest_client":
 			print (ns.get_speedtest_client())
+		elif setting == "bwmonitor_enabled":
+			print (ns.get_bandwidth_monitor_enabled())
 
 	if action == "set":
 		if setting == "data_usage_quota_GB":

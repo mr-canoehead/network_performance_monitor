@@ -131,7 +131,12 @@ def test_local_network(test_exec_namespace, remote_host, dbq):
 def test_isp(test_exec_namespace,dbq):
 	speedtest_client = NETPERF_SETTINGS.get_speedtest_client()
 	speedtest_server_id = NETPERF_SETTINGS.get_speedtest_server_id()
+	bwmonitor_enabled = NETPERF_SETTINGS.get_bandwidth_monitor_enabled()
 	test_log.info("Testing Internet speed...")
+	if bwmonitor_enabled == True:
+		test_log.info("Bandwidth monitor is enabled")
+	else:
+		test_log.info("Bandwidth monitor is disabled")
 	if not default_nns(test_exec_namespace):
 		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
 	else:
@@ -153,6 +158,8 @@ def test_isp(test_exec_namespace,dbq):
 	print (cmd)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=DEVNULL)
 	json_str = ps.communicate()[0]
+	bwm_rx_Mbps = 0.0
+	bwm_tx_Mbps = 0.0
 	if ps.returncode == 0:
 		test_log.info("Successful speedtest.")
 		# successful speedtest
@@ -177,7 +184,17 @@ def test_isp(test_exec_namespace,dbq):
 			ping = round(speedtest_json['ping']['latency'],2)
 			remote_host=speedtest_json['server']['host']
 			url='n/a'
-
+		if bwmonitor_enabled:
+			db_filename = NETPERF_SETTINGS.get_db_filename()
+			db = netperf_db(db_filename)
+			bwm_data = db.get_bandwidth_data(minutes=1)
+			for d in bwm_data:
+				rxMbps = round(d["rx_bps"]/1e6,2)
+				txMbps = round(d["tx_bps"]/1e6,2)
+				if rxMbps > bwm_rx_Mbps:
+					bwm_rx_Mbps = rxMbps
+				if txMbps > bwm_tx_Mbps:
+					bwm_tx_Mbps = txMbps
 		speedtest_results=(client_id,time.time(),rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
 		test_status = True
 	else:
@@ -203,7 +220,9 @@ def test_isp(test_exec_namespace,dbq):
 				"tx_bytes" : tx_bytes, \
 				"remote_host" : remote_host, \
 				"url" : url, \
-				"ping" : ping}
+				"ping" : ping, \
+				"bwm_rx_Mbps" : bwm_rx_Mbps, \
+				"bwm_tx_Mbps" : bwm_tx_Mbps }
                           }
 	dbq.write(st_data)
 	if NETPERF_SETTINGS.get_speedtest_enforce_quota() == True:

@@ -566,6 +566,14 @@ socket.on('speedtest_data', function(msg) {
 		rx_Mbps = json.rx_Mbps;
 		tx_Mbps = json.tx_Mbps;
 		latency = json.ping;
+		bwm_rx_Mbps = json.bwm_rx_Mbps;
+		bwm_tx_Mbps = json.bwm_tx_Mbps;
+		if (bwm_rx_Mbps > rx_Mbps){
+			rx_Mbps = bwm_rx_Mbps;
+		}
+		if (bwm_tx_Mbps > tx_Mbps){
+			tx_Mbps = bwm_tx_Mbps;
+		}
 		rx_Mbps_values.push({x: frac_hour, y: rx_Mbps})
 		tx_Mbps_values.push({x: frac_hour, y: tx_Mbps})
 		latency_values.push({x: frac_hour, y: latency})
@@ -587,9 +595,21 @@ socket.on('speedtest', function(msg) {
 		if (netperfData.viewDate != "today"){
 			return
 		}
+		if (msg.bwm_rx_Mbps > msg.rx_Mbps){
+			rx_Mbps = msg.bwm_rx_Mbps;
+		}
+		else{
+			rx_Mbps = msg.rx_Mbps;
+		}
+		if (msg.bwm_tx_Mbps > msg.tx_Mbps){
+			tx_Mbps = msg.bwm_tx_Mbps;
+		}
+		else{
+			tx_Mbps = msg.tx_Mbps;
+		}
 		var frac_hour = fractional_hour(msg.timestamp);
-		var rx_Mbps_point={x: frac_hour, y: msg.rx_Mbps};
-		var tx_Mbps_point={x: frac_hour, y: msg.tx_Mbps};
+		var rx_Mbps_point={x: frac_hour, y: rx_Mbps};
+		var tx_Mbps_point={x: frac_hour, y: tx_Mbps};
 		var latency_point={x: frac_hour, y: msg.ping};
 		if (!sameDay(msg.timestamp, speedtestChart.lastTimestamp)){
 			speedtestChart.chartObject.data.datasets[0].data = [];
