@@ -24,6 +24,9 @@ Note: the Network Performance Monitor is not a router, WiFi access point, or wir
 </p>
 
 ## Credits
+[Chris Lindstrom](https://github.com/mr-canoehead)
+  - creator and maintainer of the project
+  
 [Phil Reese](https://github.com/preese)
   - initiated the Python 3 migration and did the heavy lifting on this effort
   - initiated the CentOS / Fedora compatibility changes and assisted with testing this work
